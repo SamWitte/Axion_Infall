@@ -1,0 +1,39 @@
+__precompile__()
+using NPZ
+
+function find_init_conds(fileName, b, M, v_NS)
+	 # b is impact param, M is mass axion minicluster solar mass
+	 # for the time being, i will assume -v_NS in zhat direction and impact parameter in x hat -- can be generalized in future
+
+	 SurfaceX, SurfaceV, finalX, finalV, dkdl = npzread(fileName)
+	 R_amc = 1.4e8 .* (M / 1e-10) .^ (1.0 ./ 3.0) # km
+	 # assume misaligned in xhat direction
+	 finalX[:, 1] .-= b
+	 rho_sf = sqrt.(finalX[:, 1].^2 .+ finalX[:, 2])
+	 subpts = finalX[rho_sf .< R_amc, :]
+	 first_pt = subpts[argmin(subpts[:, 3]), :]
+	 z0 = sqrt.(R_amc.^2 .- (first_pt[1].^2 .+ first_pt[2].^2)) .- first_pt[3]
+
+	 return [b 0 z0]
+end
+
+function density_eval(finalX, init_conds, M, rho_amc, v_NS, t)
+	 # assumes powerlaw profile
+	 # rho_amc = M_dot / pc^3
+	 
+	 central_amc = init_conds .+ v_NS .* t
+	 dist = sqrt.(sum( (finalX .- central_amc) .^ 2 , dims=1))
+
+	 R_amc = 1.4e8 .* (M / 1e-10) .^ (1.0 ./ 3.0) #	km
+	 density = zeros(length(finalX[:, 1]))
+	 rho_0 = R_amc.^(9.0/4.0) ./ 4.0 .* rho_amc
+	 density[dist .< R_amc] .= rho_0 ./ dist[dist .< R_amc].^(9.0./4.0)
+	 return density # units: Solar mass / pc^3
+end
+
+function scan_mc_evolution(fileName, b, M, rho_amc, v_NS, tlist)
+	 init_Cs = find_init_conds(fileName, b, M, v_NS)
+	 
+
+
+end
