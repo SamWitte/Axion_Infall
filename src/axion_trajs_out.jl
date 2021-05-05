@@ -153,8 +153,8 @@ function Get_Normal_CosTheta(x_list, v_list, Ax_mass, t_in, θm, ω, B0, rNS)
         ωpL = GJ_Model_ωp_vec(x0, t_in, θm, ω, B0, rNS);
         cx_list = get_crossings(log.(ωpL) .- log.(Ax_mass));
         cross = apply(cx_list, rL);
-        
-        xMEAN = [cross[1] .* sin.(θ[i]) .* cos.(ϕ[i]) cross[1] .* sin.(θ[i]) .* sin.(ϕ[i]) cross[1] .* cos.(θ[i])];
+        rMean = cross[1]
+        xMEAN = [rMean .* sin.(θ[i]) .* cos.(ϕ[i]) rMean .* sin.(θ[i]) .* sin.(ϕ[i]) rMean .* cos.(θ[i])];
         
         
         
@@ -165,9 +165,9 @@ function Get_Normal_CosTheta(x_list, v_list, Ax_mass, t_in, θm, ω, B0, rNS)
         if length(cx_list.i1) != 0
             rx = cross[1]
         else
-            rx = 10
+            rx = rMean
         end
-        finalVec_N1 = [cross[1] .* sin.(θ[i] .+ shift) .* cos.(ϕ[i]) cross[1] .* sin.(θ[i] .+ shift) .* sin.(ϕ[i]) cross[1] .* cos.(θ[i] .+ shift)];
+        finalVec_N1 = [rx .* sin.(θ[i] .+ shift) .* cos.(ϕ[i]) rx .* sin.(θ[i] .+ shift) .* sin.(ϕ[i]) rx .* cos.(θ[i] .+ shift)];
         
         finalVec_N1 .-= xMEAN;
         
@@ -178,9 +178,9 @@ function Get_Normal_CosTheta(x_list, v_list, Ax_mass, t_in, θm, ω, B0, rNS)
         if length(cx_list.i1) != 0
             rx = cross[1]
         else
-            rx = 10
+            rx = rMean
         end
-        finalVec_N2 = [cross[1] .* sin.(θ[i] .- shift) .* cos.(ϕ[i] + 2 .* shift) cross[1] .* sin.(θ[i] .- shift) .* sin.(ϕ[i] .+ 2 .* shift) cross[1] .* cos.(θ[i] .- shift)];
+        finalVec_N2 = [rx .* sin.(θ[i] .- shift) .* cos.(ϕ[i] + 2 .* shift) rx .* sin.(θ[i] .- shift) .* sin.(ϕ[i] .+ 2 .* shift) rx .* cos.(θ[i] .- shift)];
         finalVec_N2 .-= xMEAN;
         
         val = [(finalVec_N1[2] .* finalVec_N2[3] .- finalVec_N1[3] .* finalVec_N2[2]) (finalVec_N1[3] .* finalVec_N2[1] .- finalVec_N1[1] .* finalVec_N2[3]) (finalVec_N1[1] .* finalVec_N2[2] .- finalVec_N1[2] .* finalVec_N2[1])];
