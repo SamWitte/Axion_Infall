@@ -354,6 +354,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
     dirN = "temp_storage/"
 
     for i in 1:length(t_list)
+        t_in = t_list[i]
         ## FIX
         fileTail = "PhaseSpace_Map_AxionM_"*string(Mass_a)*"_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileTail *= "Time_"*string(t_in)*"_sec_"

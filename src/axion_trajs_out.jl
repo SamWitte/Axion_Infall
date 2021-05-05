@@ -300,10 +300,12 @@ function solve_vel_CS(θ, ϕ, r, NS_vel; guess=[0.1 0.1 0.1])
         F[1] = (ff .* vx .+ sqrt.(ff) .* GMr .* rhat[1] .- sqrt.(ff) .* vx .* sum(x .* rhat)) ./ denom .- NS_vel[1]
         F[2] = (ff .* vy .+ sqrt.(ff) .* GMr .* rhat[2] .- sqrt.(ff) .* vy .* sum(x .* rhat)) ./ denom .- NS_vel[2]
         F[3] = (ff .* vz .+ sqrt.(ff) .* GMr .* rhat[3] .- sqrt.(ff) .* vz .* sum(x .* rhat)) ./ denom .- NS_vel[3]
-        
+        # print(F[1], "\t",F[2], "\t", F[3],"\n")
+        # print(θ, "\t", ϕ,"\t", r, "\n")
     end
     
     soln = nlsolve(f!, guess, autodiff = :forward, ftol=1e-24, iterations=10000)
+   
     # FF = zeros(3)
     # FF2 = zeros(3)
     # f!(FF, soln.zero)
@@ -331,21 +333,22 @@ function main_runner(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel; nsteps=10000, ln
     
     RT = RayTracer; # define ray tracer module
     ConvR = RT.Find_Conversion_Surface(Mass_a, t_in, θm, ωPul, B0, rNS, thetaVs=thetaVs, phiVs=phiVs)
+    ConvR_Cut = ConvR[ConvR[:,3] .>= rNS, :]
     NumerP = [ln_tstart, ln_tend, ode_err]
-    vGu=0.2
+    vGu=0.3
     
-    finalX = zeros(2 * length(ConvR[:,1]), 3)
-    finalV = zeros(2 * length(ConvR[:,1]), 3)
+    finalX = zeros(2 * length(ConvR_Cut[:,1]), 3)
+    finalV = zeros(2 * length(ConvR_Cut[:,1]), 3)
     
-    SurfaceX = zeros(2 * length(ConvR[:,1]), 3)
-    SurfaceV = zeros(2 * length(ConvR[:,1]), 3)
+    SurfaceX = zeros(2 * length(ConvR_Cut[:,1]), 3)
+    SurfaceV = zeros(2 * length(ConvR_Cut[:,1]), 3)
     cnt = 1;
     
     MagnetoVars = [θm, ωPul, B0, rNS, [1.0 1.0], t_in]
     
-    for i in 1:length(ConvR[:,1])
+    for i in 1:length(ConvR_Cut[:,1])
         
-        θ, ϕ, r = ConvR[i,:]
+        θ, ϕ, r = ConvR_Cut[i,:]
 
         
         velV = solve_vel_CS(θ, ϕ, r, NS_vel, guess=[vGu vGu vGu])
