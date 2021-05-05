@@ -340,7 +340,7 @@ end
 
 end
 
-function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0])
+function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], RadApprox=false)
 
     RT = RayTracer; # define ray tracer module
     func_use = RT.ωNR_e
@@ -424,11 +424,20 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         BperpV = Bvec .- kini .* sum(Bvec .* kini, dims=2) ./ sum(kini .^ 2, dims=2);
         Bperp = sqrt.(sum(BperpV .^ 2, dims=2)) .* (1.95e-20); # GeV^2
         
-        probab = π ./ vmag_tot.^2 .* (1e-12 .* Bperp).^2 ./ dkdl[:] ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2; # g [1e-12 GeV^-1], unitless
         rr = sqrt.(sum(SurfaceX .^2, dims=2));
+        if !RadApprox
+            cLen = 1.0 ./ dkdl[:]
+        else
+            cLen = 2.0 .* rr .* vmag_tot ./ (3.0 .* Mass_a) .* 6.56e-16 .* 2.998e5;
+        end
+        probab = π ./ vmag_tot.^2 .* (1e-12 .* Bperp).^2 .* cLen ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2; # g [1e-12 GeV^-1], unitless
+        
         dS = rr.^2 .* sin.(acos.(SurfaceX[:, 3] ./ rr));
         # assume number density at each point 1 / cm^3
-        SaveAll[:, 6] .= 1.0 .* dS[:] .* vmag_tot[:].^3 .* ctheta[:] .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons / second
+        SaveAll[:, 6] .= 1.0 .* dS[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons / second
+        if !RadApprox
+            SaveAll[:, 6] .*= ctheta[:];
+        end
         SaveAll[:, 7] .= Δω[:];
     
     
