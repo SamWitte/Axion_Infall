@@ -522,10 +522,8 @@ end
 
 function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], RadApprox=false)
 
-    if !RadApprox
-        func_use = RT.ωNR_e
-    else
-        func_use = RT.ωFree
+
+    if RadApprox
         CLen_Scale = false
         file_tag *= "_RadApprox_"
     end
