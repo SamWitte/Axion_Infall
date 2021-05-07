@@ -573,6 +573,6 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
         fileS *= "NS_velZ_"*string(round(NS_vel[3], digits=4))
     end
     fileS *= "_"*file_tag*"_.npz";
-    npz.write(fileS, sve_info)
+    npzwrite(fileS, sve_info)
 
 end
