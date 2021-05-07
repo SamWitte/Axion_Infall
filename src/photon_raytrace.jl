@@ -338,12 +338,23 @@ function kNR_e(x, k, ω, t, θm, ωPul, B0, rNS, gammaF)
     return sqrt.(((ω.^2 .-  ωp.^2) ./ (1 .- cθ.^2 .* ωp.^2 ./ ω.^2)))
 end
 
+function ωFree(x, k, t, θm, ωPul, B0, rNS, gammaF)
+    # assume simple case where ωp proportional to r^{-3/2}, no time dependence, no magnetic field
+    return sqrt.(sum(k .* k, dims = 2) .+ 1e-40 .* sqrt.(sum(x .* x, dims=2)) ./ (rNS.^ 2) )
+end
+
 end
 
 function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], RadApprox=false)
 
     RT = RayTracer; # define ray tracer module
-    func_use = RT.ωNR_e
+    if !RadApprox
+        func_use = RT.ωNR_e
+    else
+        func_use = RT.ωFree
+        CLen_Scale = false
+        file_tag *= "_RadApprox_"
+    end
     
     ln_t_start = -20;
     ln_t_end = log.(1 ./ ωPul);
@@ -355,7 +366,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
 
     for i in 1:length(t_list)
         t_in = t_list[i]
-        ## FIX
+        
         fileTail = "PhaseSpace_Map_AxionM_"*string(Mass_a)*"_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileTail *= "Time_"*string(t_in)*"_sec_"
         if NS_vel[1] != 0
@@ -392,6 +403,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         kini = SurfaceV .* Mass_a
         MagnetoVars = [θm, ωPul, B0, rNS, [1.0 1.0], sln_t] # θm, ωPul, B0, rNS, gamma factors, Time = 0
         
+        rr = sqrt.(sum(SurfaceX .^2, dims=2));
+        
         xF, kF, tF = RT.propagate(func_use, SurfaceX, kini, ntimes, MagnetoVars, NumerPass);
         ϕf = atan.(view(kF, :, 2, ntimes), view(kF, :, 1, ntimes));
         ϕfX = atan.(view(xF, :, 2, ntimes), view(xF, :, 1, ntimes));
@@ -401,10 +414,17 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         # compute energy dispersion (ωf - ωi) / ωi
         passA = [func_use, MagnetoVars];
         Δω = tF[:, end] ./ Mass_a;
-        
         opticalDepth = RT.tau_cyc(xF, kF, ttΔω, passA, Mass_a);
+    
+        SaveAll[:, 1] .= view(θf, :);
+        SaveAll[:, 2] .= view(ϕf,:);
+        SaveAll[:, 3] .= view(θfX, :);
+        SaveAll[:, 4] .= view(ϕfX, :);
+        SaveAll[:, 5] .= sqrt.(sum(xF[:, :, end] .^2, dims=2))[:]; # r final
+        SaveAll[:, 7] .= Δω[:];
         
-        num_photons = length(ϕf)
+
+        num_photons = length(SurfaceX[:,1])
         sln_ConVL = sqrt.(π ./ dkdl.^2); # km
         passA2 = [func_use, MagnetoVars, Mass_a];
         if CLen_Scale
@@ -413,18 +433,11 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
             weightC = ones(num_photons)
         end
         
-        SaveAll[:, 1] .= view(θf, :);
-        SaveAll[:, 2] .= view(ϕf,:);
-        SaveAll[:, 3] .= view(θfX, :);
-        SaveAll[:, 4] .= view(ϕfX, :);
-        SaveAll[:, 5] .= sqrt.(sum(xF[:, :, end] .^2, dims=2))[:]; # r final
-        
-        
         Bvec, ωp = RT.GJ_Model_vec(SurfaceX, sln_t, θm, ωPul, B0, rNS);
         BperpV = Bvec .- kini .* sum(Bvec .* kini, dims=2) ./ sum(kini .^ 2, dims=2);
         Bperp = sqrt.(sum(BperpV .^ 2, dims=2)) .* (1.95e-20); # GeV^2
         
-        rr = sqrt.(sum(SurfaceX .^2, dims=2));
+        
         if !RadApprox
             cLen = 1.0 ./ dkdl[:]
         else
@@ -438,9 +451,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         if !RadApprox
             SaveAll[:, 6] .*= ctheta[:];
         end
-        SaveAll[:, 7] .= Δω[:];
-    
-    
+            
         fileN = "results/Minicluster_Time_"*string(t_list[i])*"_MassAx_"*string(Mass_a);
         fileN *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileN *= string(rNS)*"_MassNS_"*string(Mass_NS);
@@ -509,3 +520,61 @@ function ConvL_weights(xfin, kfin, v_sur, tt, conL, Mvars)
     return weights
 end
 
+function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], RadApprox=false)
+
+    if !RadApprox
+        func_use = RT.ωNR_e
+    else
+        func_use = RT.ωFree
+        CLen_Scale = false
+        file_tag *= "_RadApprox_"
+    end
+
+    dirN = "temp_storage/"
+
+    for i in 1:length(t_list)
+        t_in = t_list[i]
+        
+        fileN = "results/Minicluster_Time_"*string(t_list[i])*"_MassAx_"*string(Mass_a);
+        fileN *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
+        fileN *= string(rNS)*"_MassNS_"*string(Mass_NS);
+        
+        if NS_vel[1] != 0
+            fileN *= "NS_velX_"*string(round(NS_vel[1], digits=4))
+        end
+        if NS_vel[2] != 0
+            fileN *= "NS_velY_"*string(round(NS_vel[2], digits=4))
+        end
+        if NS_vel[3] != 0
+            fileN *= "NS_velZ_"*string(round(NS_vel[3], digits=4))
+        end
+        fileN *= "_"*file_tag*"_.npz";
+        
+        if i == 1
+            sve_info = npzread(fileN)
+        else
+            hold = npzread(fileN)
+            sve_info = vcat((sve_info, hold)...)
+        end
+    end
+    
+    period = 2 .* π ./ ωPul;
+    sve_info[:, 6] ./= period;
+    
+    fileS = fileN = "results/Minicluster_PeriodAvg_MassAx_"*string(Mass_a);
+    fileS *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
+    fileS *= string(rNS)*"_MassNS_"*string(Mass_NS);
+        
+    if NS_vel[1] != 0
+        fileS *= "NS_velX_"*string(round(NS_vel[1], digits=4))
+    end
+    if NS_vel[2] != 0
+        fileS *= "NS_velY_"*string(round(NS_vel[2], digits=4))
+    end
+    if NS_vel[3] != 0
+        fileS *= "NS_velZ_"*string(round(NS_vel[3], digits=4))
+    end
+    fileS *= "_"*file_tag*"_.npz";
+    npz.write(fileS, sve_info)
+
+end
