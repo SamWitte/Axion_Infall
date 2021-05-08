@@ -23,13 +23,18 @@ ln_tend = 20
 threshold = 0.0001
 sve = true;
 
-file_tag = "TEST_"
+file_tag = ""
 RadApprox = false
 
+function run_all()
+    if !RadApprox
+        for i in 1:n_times
+            surface_solver(Mass_a, θm, ωPul, B0, rNS, t_list[i], NS_vel; nsteps=10, ln_tstart=-15, ln_tend=ln_tend, ode_err=1e-10, phiVs=phiVs, thetaVs=thetaVs, threshold=threshold, sve=sve);
+        end
+    end
 
-for i in 1:n_times
-    surface_solver(Mass_a, θm, ωPul, B0, rNS, t_list[i], NS_vel; nsteps=10, ln_tstart=-15, ln_tend=ln_tend, ode_err=1e-10, phiVs=phiVs, thetaVs=thetaVs, threshold=threshold, sve=sve);
+    main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-7, CLen_Scale=true, v_NS=NS_vel, file_tag=file_tag, RadApprox=RadApprox)
+    period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-7, CLen_Scale=true, v_NS=NS_vel, file_tag=file_tag, RadApprox=RadApprox)
 end
 
-main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-7, CLen_Scale=true, v_NS=NS_vel, file_tag=file_tag, RadApprox=RadApprox)
-period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-7, CLen_Scale=true, v_NS=NS_vel, file_tag=file_tag, RadApprox=RadApprox)
+run_all()
