@@ -109,7 +109,7 @@ function propagate(ω, x0::Matrix, k0::Matrix,  nsteps::Int, Mvars::Array, Numer
     u0 = ([x0 k0 zeros(length(x0[:, 1]))])
 
     prob = ODEProblem(func!, u0, tspan, [ω, Mvars], reltol=ode_err*1e-2, abstol=ode_err, maxiters=1e5)
-    sol = solve(prob, Tsit5(), saveat=saveat)
+    sol = solve(prob, Tsit5(), saveat=saveat, batch_size=10)
     x = cat([Array(u)[:, 1:3] for u in sol.u]..., dims = 3);
     k = cat([Array(u)[:, 4:6] for u in sol.u]..., dims = 3);
     dt = cat([Array(u)[:, 7] for u in sol.u]..., dims = 2);
@@ -775,7 +775,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         
         dS = rr.^2 .* sin.(acos.(SurfaceX[:, 3] ./ rr));
         # assume number density at each point 1 / cm^3
-        SaveAll[:, 6] .= 1.0 .* dS[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons / second
+        SaveAll[:, 6] .= 1.0 .* dS[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons
         if !RadApprox
             SaveAll[:, 6] .*= ctheta[:];
         end
