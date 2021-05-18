@@ -108,8 +108,9 @@ function propagate(ω, x0::Matrix, k0::Matrix,  nsteps::Int, Mvars::Array, Numer
 #     u0 = cu([x0 k0])
     u0 = ([x0 k0 zeros(length(x0[:, 1]))])
 
-    prob = ODEProblem(func!, u0, tspan, [ω, Mvars], reltol=ode_err*1e-2, abstol=ode_err, maxiters=1e5)
-    sol = solve(prob, Tsit5(), saveat=saveat, batch_size=10)
+    prob = ODEProblem(func!, u0, tspan, [ω, Mvars], reltol=ode_err*1e-1, abstol=ode_err, maxiters=1e5)
+    sol = solve(prob, Vern6(), saveat=saveat)
+    # sol = solve(prob, Tsit5(), saveat=saveat, batch_size=10)
     x = cat([Array(u)[:, 1:3] for u in sol.u]..., dims = 3);
     k = cat([Array(u)[:, 4:6] for u in sol.u]..., dims = 3);
     dt = cat([Array(u)[:, 7] for u in sol.u]..., dims = 2);
@@ -140,7 +141,10 @@ end
 function Find_Conversion_Surface(Ax_mass, t_in, θm, ω, B0, rNS; thetaVs=100, phiVs=100)
 
     # rayT = RayTracer;
-    rL = 10 .^ LinRange(log10.(rNS), 3, 5000)
+    om_test = GJ_Model_ωp_scalar(rNS .* [sin.(θm) 0.0 cos.(θm)], t_in, θm, ω, B0, rNS);
+    rc_guess = rNS .* (om_test ./ Ax_mass) .^ (2.0 ./ 3.0);
+    
+    rL = 10 .^ LinRange(log10.(rNS), log10.(2 .* rc_guess), 5000)
     θL = LinRange(0.02 , π - 0.02, thetaVs)
     ϕL = LinRange(0.02, 2 * π - 0.02, phiVs)
     finalVec = zeros(length(θL)*length(ϕL), 3)
@@ -420,7 +424,7 @@ function GJ_Model_ωp_vec(x, t, θm, ω, B0, rNS)
     # t [s], omega [1/s]
 
     r = sqrt.(sum(x .* x, dims=2))
-    ϕ = atan.(view(x, :, 2) ./  view(x, :, 1))
+    ϕ = atan.(view(x, :, 2),  view(x, :, 1))
     θ = acos.(view(x, :, 3) ./ r)
     # ϕ = atan.(x[:, 2], x[:, 1])
     # θ = acos.(x[:, 3] ./ r)
@@ -437,7 +441,7 @@ function GJ_Model_ωp_scalar(x, t, θm, ω, B0, rNS)
     # t [s], omega [1/s]
 
     r = sqrt.(sum(x .* x))
-    ϕ = atan.(x[2] ./ x[1])
+    ϕ = atan.(x[2] , x[1])
     θ = acos.( x[3]./ r)
     ψ = ϕ .- ω.*t
     ωp = (69.2e-6 .* sqrt.( abs.(3 .* cos.(θ).*( cos.(θm) .* cos.(θ) .+ sin.(θm) .* sin.(θ) .* cos.(ψ) ) .- cos.(θm))).*
@@ -452,7 +456,7 @@ function GJ_Model_scalar(x, t, θm, ω, B0, rNS)
     # t [s], omega [1/s]
 
     r = sqrt.(sum(x .* x))
-    ϕ = atan.(x[2] ./ x[1])
+    ϕ = atan.(x[2], x[1])
     θ = acos.( x[3]./ r)
     ψ = ϕ .- ω.*t
     ωp = (69.2e-6 .* sqrt.( abs.(3 .* cos.(θ).*( cos.(θm) .* cos.(θ) .+ sin.(θm) .* sin.(θ) .* cos.(ψ) ) .- cos.(θm))).*
