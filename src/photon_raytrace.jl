@@ -8,6 +8,7 @@ using OrdinaryDiffEq
 # using CuArrays
 using DifferentialEquations
 using Plots
+using LSODA
 
 
 ### Parallelized derivatives with ForwardDiff.Dual
@@ -108,7 +109,7 @@ function propagate(ω, x0::Matrix, k0::Matrix,  nsteps::Int, Mvars::Array, Numer
 #     u0 = cu([x0 k0])
     u0 = ([x0 k0 zeros(length(x0[:, 1]))])
 
-    prob = ODEProblem(func!, u0, tspan, [ω, Mvars], reltol=ode_err*1e-1, abstol=ode_err, maxiters=1e5)
+    prob = ODEProblem(func!, u0, tspan, [ω, Mvars], reltol=ode_err*1e0, abstol=ode_err, maxiters=1e5)
     sol = solve(prob, Vern6(), saveat=saveat)
     # sol = solve(prob, Tsit5(), saveat=saveat, batch_size=10)
     x = cat([Array(u)[:, 1:3] for u in sol.u]..., dims = 3);
@@ -126,8 +127,10 @@ function propagateAxion(x0::Matrix, k0::Matrix, nsteps::Int, NumerP::Array)
     # u0 = cu([x0 k0])
     u0 = ([x0 k0])
     
-    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err*1e-4, abstol=ode_err, maxiters=1e6);
-    sol = solve(probAx, Tsit5(), saveat=saveat);
+    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err*1e-3, abstol=ode_err, maxiters=1e7);
+    # sol = solve(probAx, Tsit5(), saveat=saveat);
+    # sol = solve(probAx, Vern6(), saveat=saveat)
+    sol = solve(probAx, lsoda(), saveat=saveat)
     
     
     x = cat([u[:, 1:3] for u in sol.u]...,dims=3);
@@ -596,7 +599,7 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel; nsteps=10000,
         xF, vF = RT.propagateAxion(x_init, vel_init, nsteps, NumerP);
         
    
-        if sqrt.(sum((hcat(vF[1, :, end]...) .- NS_vel) .^ 2)) ./ sqrt.(sum(NS_vel.^2)) < threshold
+        if sqrt.(sum((hcat(vF[1, :, end]...) .- NS_vel) .^ 2)) < threshold
             finalX[cnt, :] = xF[1, :, end];
             finalV[cnt, :] = vF[1, :, end];
             SurfaceX[cnt, :] = xF[1, :, 1];
@@ -779,7 +782,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         
         dS = rr.^2 .* sin.(acos.(SurfaceX[:, 3] ./ rr));
         # assume number density at each point 1 / cm^3
-        SaveAll[:, 6] .= 1.0 .* dS[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons
+        SaveAll[:, 6] .= 1.0 .* dS[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons -- note i've neglected rho! multiply by rho to get L in eV/s
         if !RadApprox
             SaveAll[:, 6] .*= ctheta[:];
         end
