@@ -680,7 +680,7 @@ function test_runner_surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel; i
 
 end
 
-function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], RadApprox=false)
+function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], RadApprox=false, phiVs=100, thetaVs=100)
 
     RT = RayTracer; # define ray tracer module
     if !RadApprox
@@ -695,6 +695,11 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
     ln_t_end = log.(1 ./ ωPul);
     NumerPass = [ln_t_start, ln_t_end, ode_err];
     ttΔω = exp.(LinRange(ln_t_start, ln_t_end, ntimes));
+    
+    θL = LinRange(0.02 , π - 0.02, thetaVs);
+    ϕL = LinRange(0.02, 2 * π - 0.02, phiVs);
+    dθ = θL[2] - θL[1];
+    dϕ = ϕL[2] - ϕL[1];
     
     
     dirN = "temp_storage/"
@@ -780,7 +785,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         end
         probab = π ./ vmag_tot.^2 .* (1e-12 .* Bperp).^2 .* cLen ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2; # g [1e-12 GeV^-1], unitless
         
-        dS = rr.^2 .* sin.(acos.(SurfaceX[:, 3] ./ rr));
+        dS = rr.^2 .* sin.(acos.(SurfaceX[:, 3] ./ rr)) .* dθ .* dϕ;
         # assume number density at each point 1 / cm^3
         SaveAll[:, 6] .= 1.0 .* dS[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons -- note i've neglected rho! multiply by rho to get L in eV/s
         if !RadApprox
