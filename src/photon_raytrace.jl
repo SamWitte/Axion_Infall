@@ -709,14 +709,14 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         
         fileTail = "PhaseSpace_Map_AxionM_"*string(Mass_a)*"_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileTail *= "Time_"*string(t_in)*"_sec_"
-        if NS_vel[1] != 0
-            fileTail *= "NS_velX_"*string(round(NS_vel[1], digits=4))
+        if v_NS[1] != 0
+            fileTail *= "NS_velX_"*string(round(v_NS[1], digits=4))
         end
-        if NS_vel[2] != 0
-            fileTail *= "NS_velY_"*string(round(NS_vel[2], digits=4))
+        if v_NS[2] != 0
+            fileTail *= "NS_velY_"*string(round(v_NS[2], digits=4))
         end
-        if NS_vel[3] != 0
-            fileTail *= "NS_velZ_"*string(round(NS_vel[3], digits=4))
+        if v_NS[3] != 0
+            fileTail *= "NS_velZ_"*string(round(v_NS[3], digits=4))
         end
         fileTail *= "_.npz"
         
@@ -796,14 +796,14 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         fileN *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileN *= string(rNS)*"_MassNS_"*string(Mass_NS);
         
-        if NS_vel[1] != 0
-            fileN *= "NS_velX_"*string(round(NS_vel[1], digits=4))
+        if v_NS[1] != 0
+            fileN *= "NS_velX_"*string(round(v_NS[1], digits=4))
         end
-        if NS_vel[2] != 0
-            fileN *= "NS_velY_"*string(round(NS_vel[2], digits=4))
+        if v_NS[2] != 0
+            fileN *= "NS_velY_"*string(round(v_NS[2], digits=4))
         end
-        if NS_vel[3] != 0
-            fileN *= "NS_velZ_"*string(round(NS_vel[3], digits=4))
+        if v_NS[3] != 0
+            fileN *= "NS_velZ_"*string(round(v_NS[3], digits=4))
         end
         fileN *= "_"*file_tag*"_.npz";
         npzwrite(fileN, SaveAll)
