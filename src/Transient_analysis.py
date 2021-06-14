@@ -80,7 +80,7 @@ def Find_Ftransient(NFW=True, nside=8):
         dense_scan = np.zeros_like(tlist)
         for j in range(len(tlist)):
             dense_scan[j] = Transient_AMC_DensityEval(bparam, rad_amc, dens_amc, vel, tlist[j], nfw=NFW)
-    
+        print(dense_scan, dist)
         rate *= np.max(dense_scan) * (1 / (dist * 3.086*10**18))**2 * 1.6022e-12 # erg / s / cm^2
         bwidth = axM * 1e-4 / 6.58e-16 # Hz
         rate *= (1/bwidth) * 1e26 # mJy
