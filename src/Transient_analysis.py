@@ -34,7 +34,7 @@ def Find_Ftransient(NFW=True, nside=8):
         indx = -1
         # identify mass so we know how to store
         for j in range(len(AxionMass)):
-            if axM == AxionMass[i]:
+            if axM == AxionMass[j]:
                 indx = j
         if indx == -1:
             print('Problem with mass!', axM)
