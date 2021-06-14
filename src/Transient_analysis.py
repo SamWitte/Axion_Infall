@@ -18,7 +18,7 @@ def Find_Ftransient(NFW=True, nside=8):
     else:
         orig_F = np.loadtxt('../encounter_data/Interaction_params_PL_AScut_wStripping.txt')
         
-    AxionMass = [1e-6, 5e-6, 1e-5, 3e-5] # eV
+    AxionMass = [1.0e-6, 5.0e-6, 1.0e-5, 3.0e-5] # eV
     fluxD_thresh = [0.177, 0.079, 0.0562, 0.032] # mJy
     glist = np.zeros(len(AxionMass), dtype=object)
     for i in range(len(AxionMass)):
