@@ -72,7 +72,7 @@ def Find_Ftransient(NFW=True, nside=8):
         viewA = int(np.random.rand(1) * indxs)
         rel_rows = file_in[pixel_indices == viewA]
         
-        rate = np.sum(rel_rows[:, 5])  / hp.pixelfunc.nside2resol(n_side) # missing rho [eV / cm^3], will be in [eV / s]
+        rate = np.sum(rel_rows[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
         
         epsshift = 1e-3
         tmax = Transient_Time(bparam, rad_amc, dens_amc, vel)
