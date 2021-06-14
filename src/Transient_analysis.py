@@ -43,7 +43,7 @@ def Find_Ftransient(NFW=True, nside=8):
         # identify NS in original file
         find1 = files[i].find('_rotPulsar_')
         find2 = files[i].find('_B0_')
-        periodN = float(files[i][find1+len('_rotPulsar_'):find2])
+        periodN = (2 * np.pi) / float(files[i][find1+len('_rotPulsar_'):find2])
         
         find1 = files[i].find('_B0_')
         find2 = files[i].find('_rNS_')
