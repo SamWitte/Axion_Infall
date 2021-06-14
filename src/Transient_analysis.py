@@ -4,6 +4,7 @@ from scipy.integrate import quad
 from AMC_Density_Evolution import *
 import glob
 import healpy as hp
+import os
 
 NFW = True
 nside = 8
