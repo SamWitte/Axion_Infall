@@ -26,8 +26,9 @@ def Find_Ftransient(NFW=True, nside=8):
     files = glob.glob('results/Minicluster_PeriodAvg*')
     # cycle through output files
     for i in range(len(files)):
-        find1 = files[i].find('_MassAx_')
+        find1 = files[i].find('MassAx_')
         find2 = files[i].find('_ThetaM_')
+        print(files[i], find1, find2)
         axM = float(files[i][find1+len(find1):find2])
         indx = -1
         # identify mass so we know how to store
