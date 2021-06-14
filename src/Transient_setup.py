@@ -1,12 +1,9 @@
 import os
 import numpy as np
-from scipy.integrate import quad
-from scipy.interpolate import interp1d
-import healpy as hp
-from AMC_Density_Evolution import *
 
 fileN = '../encounter_data/Interaction_params_NFW_AScut_wStripping.txt'
 #fileN = '../encounter_data/Interaction_params_PL_AScut_wStripping.txt'
+Nruns = 1000
 
 def Stripped_Files_For_RT(fileN, num_ns):
     loadF = np.loadtxt(fileN)
@@ -25,6 +22,7 @@ def Stripped_Files_For_RT(fileN, num_ns):
     B = loadF[:, 7]
     glong = loadF[:, 1]
     glat = loadF[:, 2]
+    velM = loadF[:, -1] * 3.086e+13 / 2.998e5
     
     script_dir = "scripts"
     
@@ -41,12 +39,13 @@ def Stripped_Files_For_RT(fileN, num_ns):
         ThetaM = Theta_M[i]
         glg = glong[i]
         glt = glat[i]
+        velnorm = velM[i]
         if np.sqrt(glt**2 + glg**2) > 1:
             continue
     
         for j in range(len(AxionMass)):
             cmd = 'julia Transient_runner.jl ' +\
-                    '--B0 {:.2e} --P {:.2f} --ThetaM {:.2f} --mass {:.2e} \n '.format(B0, Period, ThetaM, AxionMass[j])
+                    '--B0 {:.2e} --P {:.2f} --ThetaM {:.2f} --mass {:.2e} --vel {:.2e} \n '.format(B0, Period, ThetaM, AxionMass[j], velnorm)
                     
             cmds.append(cmd)
 
@@ -74,4 +73,4 @@ def Stripped_Files_For_RT(fileN, num_ns):
     return
     
 
-Stripped_Files_For_RT(fileN, 1000)
+Stripped_Files_For_RT(fileN, Nruns)

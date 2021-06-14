@@ -13,8 +13,9 @@ Mass_NS=1;
 ωPul = 1.0;
 B0 = 1e14;
 rNS = 10;
-NS_vel = [0 0 200.0] ./ 2.998e5;
-n_times = 2;
+NS_vel_M = 200.0 ./ 2.998e5;
+NS_vel_T = 0.0;
+n_times = 20;
 t_list = LinRange(0.0, 2.0 * π / ωPul, n_times)
 CLen_Scale = false
 
@@ -31,12 +32,12 @@ run_surface = false
 function run_all()
     if !RadApprox && run_surface
         for i in 1:n_times
-            surface_solver(Mass_a, θm, ωPul, B0, rNS, t_list[i], NS_vel; nsteps=10, ln_tstart=-15, ln_tend=ln_tend, ode_err=1e-10, phiVs=phiVs, thetaVs=thetaVs, threshold=threshold, sve=sve);
+            surface_solver(Mass_a, θm, ωPul, B0, rNS, t_list[i], NS_vel_M, NS_vel_T; nsteps=10, ln_tstart=-15, ln_tend=ln_tend, ode_err=1e-10, phiVs=phiVs, thetaVs=thetaVs, threshold=threshold, sve=sve);
         end
     end
 
-    main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-7, CLen_Scale=CLen_Scale, v_NS=NS_vel, file_tag=file_tag, RadApprox=RadApprox, phiVs=phiVs, thetaVs=thetaVs)
-    period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-7, CLen_Scale=CLen_Scale, v_NS=NS_vel, file_tag=file_tag, RadApprox=RadApprox)
+    main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-7, CLen_Scale=CLen_Scale, NS_vel_M=NS_vel_M, NS_vel_T=NS_vel_T, file_tag=file_tag, RadApprox=RadApprox, phiVs=phiVs, thetaVs=thetaVs)
+    period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-7, CLen_Scale=CLen_Scale, NS_vel_M=NS_vel_M, NS_vel_T=NS_vel_T, file_tag=file_tag, RadApprox=RadApprox)
 end
 
 run_all()

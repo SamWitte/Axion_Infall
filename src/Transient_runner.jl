@@ -3,7 +3,9 @@ using SpecialFunctions
 using LinearAlgebra
 using NPZ
 using Dates
+using NLsolve
 using Statistics
+using Glob
 include("photon_raytrace.jl")
 
 function parse_commandline()
@@ -26,6 +28,10 @@ function parse_commandline()
             arg_type = Float64
             default = 1.0e-6
             
+        "--vel"
+            arg_type = Float64
+            default = 0.00066
+            
     end
 
     return parse_args(s)
@@ -41,7 +47,13 @@ function main_runner()
     ωPul = round(2π ./ parsed_args["P"], digits=4); # 1/s
     B0 = parsed_args["B0"]; # G
     rNS = 10.0; # km
-    NS_vel = [141.421 0 141.421] ./ 2.998e5;
+    
+    thetaV = acos.(1.0 .- 2.0 .* rand(1));
+    # phiV = rand(1) .* 2 .* π;
+    phiV = 0.0; # irrelevant, since we period average
+    
+    NS_vel = [cos.(phiV) .* sin.(thetaV) sin.(phiV) .* sin.(thetaV) cos.(thetaV)] .* parsed_args["vel"];
+    
     Mass_NS = 1.0; # solar mass
     
     n_times = 20;
@@ -58,11 +70,19 @@ function main_runner()
     
     print(Mass_a, "\t", θm, "\t", ωPul, "\t", B0, "\n")
     for i in 1:n_times
-        @inbounds @fastmath surface_solver(Mass_a, θm, ωPul, B0, rNS, t_list[i], NS_vel; nsteps=10, ln_tstart=-15, ln_tend=ln_tend, ode_err=1e-10, phiVs=phiVs, thetaVs=thetaVs, threshold=threshold, sve=sve);
+        @inbounds @fastmath surface_solver(Mass_a, θm, ωPul, B0, rNS, t_list[i], parsed_args["vel"], thetaV; nsteps=10, ln_tstart=-15, ln_tend=ln_tend, ode_err=1e-10, phiVs=phiVs, thetaVs=thetaVs, threshold=threshold, sve=sve);
     end
-    @inbounds @fastmath main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale, v_NS=NS_vel, file_tag=file_tag, RadApprox=false, phiVs=phiVs, thetaVs=thetaVs)
-    period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale, v_NS=NS_vel, file_tag=file_tag, RadApprox=false)
+    @inbounds @fastmath main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale, NS_vel_M=parsed_args["vel"], NS_vel_T=thetaV, file_tag=file_tag, RadApprox=false, phiVs=phiVs, thetaVs=thetaVs)
+    period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale,  NS_vel_M=parsed_args["vel"], NS_vel_T=thetaV, file_tag=file_tag, RadApprox=false)
 
 end
 
+function remove_extra_files()
+    filesN = glob("Minicluster_Time*", "results/");
+    for i in 1:length(filesN)
+        rm(filesN[i]);
+    end
+end
+
 main_runner()
+remove_extra_files()

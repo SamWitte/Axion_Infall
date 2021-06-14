@@ -566,8 +566,9 @@ function test_vs_soln(θ, ϕ, r, NS_vel, x)
 end
 
 
-function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel; nsteps=10000, ln_tstart=-4, ln_tend=5, ode_err=1e-8, phiVs=100, thetaVs=100, threshold=0.05, sve=False)
+function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; nsteps=10000, ln_tstart=-4, ln_tend=5, ode_err=1e-8, phiVs=100, thetaVs=100, threshold=0.05, sve=False)
 
+    NS_vel = [sin.(NS_vel_T) 0.0 cos.(NS_vel_T)] .* NS_vel_M;
     
     RT = RayTracer; # define ray tracer module
     ConvR = RT.Find_Conversion_Surface(Mass_a, t_in, θm, ωPul, B0, rNS, thetaVs=thetaVs, phiVs=phiVs)
@@ -636,15 +637,9 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel; nsteps=10000,
         dirN = "temp_storage/"
         fileTail = "PhaseSpace_Map_AxionM_"*string(Mass_a)*"_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileTail *= "Time_"*string(t_in)*"_sec_"
-        if NS_vel[1] != 0
-            fileTail *= "NS_velX_"*string(round(NS_vel[1], digits=4))
-        end
-        if NS_vel[2] != 0
-            fileTail *= "NS_velY_"*string(round(NS_vel[2], digits=4))
-        end
-        if NS_vel[3] != 0
-            fileTail *= "NS_velZ_"*string(round(NS_vel[3], digits=4))
-        end
+        
+        fileTail *= "NS_Mag_"*string(round(NS_vel_M, digits=5))*"NS_Theta_"*string(round(NS_vel_T, digits=3))
+        
         fileTail *= "_.npz"
         npzwrite(dirN*"SurfaceX_"*fileTail, SurfaceX[1:(cnt-1),:])
         npzwrite(dirN*"SurfaceV_"*fileTail, SurfaceV[1:(cnt-1),:])
@@ -658,8 +653,9 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel; nsteps=10000,
 
 end
 
-function test_runner_surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel; indx=3000, nsteps=10000, ln_tstart=-4, ln_tend=5, ode_err=1e-8, phiVs=100, thetaVs=100)
+function test_runner_surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; indx=3000, nsteps=10000, ln_tstart=-4, ln_tend=5, ode_err=1e-8, phiVs=100, thetaVs=100)
 
+    NS_vel = [sin.(NS_vel_T) 0.0 cos.(NS_vel_T)] .* NS_vel_M;
     
     RT = RayTracer; # define ray tracer module
     ConvR = RT.Find_Conversion_Surface(Mass_a, t_in, θm, ωPul, B0, rNS, thetaVs=thetaVs, phiVs=phiVs)
@@ -680,8 +676,9 @@ function test_runner_surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel; i
 
 end
 
-function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], RadApprox=false, phiVs=100, thetaVs=100)
+function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, NS_vel_M=0.0, NS_vel_T=0.0, RadApprox=false, phiVs=100, thetaVs=100)
 
+    NS_vel = [sin.(NS_vel_T) 0.0 cos.(NS_vel_T)] .* NS_vel_M;
     RT = RayTracer; # define ray tracer module
     if !RadApprox
         func_use = RT.ωNR_e
@@ -709,15 +706,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         
         fileTail = "PhaseSpace_Map_AxionM_"*string(Mass_a)*"_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileTail *= "Time_"*string(t_in)*"_sec_"
-        if v_NS[1] != 0
-            fileTail *= "NS_velX_"*string(round(v_NS[1], digits=4))
-        end
-        if v_NS[2] != 0
-            fileTail *= "NS_velY_"*string(round(v_NS[2], digits=4))
-        end
-        if v_NS[3] != 0
-            fileTail *= "NS_velZ_"*string(round(v_NS[3], digits=4))
-        end
+        fileTail *= "NS_Mag_"*string(round(NS_vel_M, digits=5))*"NS_Theta_"*string(round(NS_vel_T, digits=3))
         fileTail *= "_.npz"
         
         sfx_fnme = dirN*"SurfaceX_"*fileTail
@@ -796,15 +785,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         fileN *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileN *= string(rNS)*"_MassNS_"*string(Mass_NS);
         
-        if v_NS[1] != 0
-            fileN *= "NS_velX_"*string(round(v_NS[1], digits=4))
-        end
-        if v_NS[2] != 0
-            fileN *= "NS_velY_"*string(round(v_NS[2], digits=4))
-        end
-        if v_NS[3] != 0
-            fileN *= "NS_velZ_"*string(round(v_NS[3], digits=4))
-        end
+        fileN *= "NS_Mag_"*string(round(NS_vel_M, digits=5))*"NS_Theta_"*string(round(NS_vel_T, digits=3))
         fileN *= "_"*file_tag*"_.npz";
         npzwrite(fileN, SaveAll)
     end
@@ -860,8 +841,9 @@ function ConvL_weights(xfin, kfin, v_sur, tt, conL, Mvars)
     return weights
 end
 
-function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], RadApprox=false)
+function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, NS_vel_M=0.0, NS_vel_T=0.0, RadApprox=false)
 
+    NS_vel = [sin.(NS_vel_T) 0.0 cos.(NS_vel_T)] .* NS_vel_M;
 
     if RadApprox
         CLen_Scale = false
@@ -877,15 +859,7 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
         fileN *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileN *= string(rNS)*"_MassNS_"*string(Mass_NS);
         
-        if v_NS[1] != 0
-            fileN *= "NS_velX_"*string(round(v_NS[1], digits=4))
-        end
-        if v_NS[2] != 0
-            fileN *= "NS_velY_"*string(round(v_NS[2], digits=4))
-        end
-        if v_NS[3] != 0
-            fileN *= "NS_velZ_"*string(round(v_NS[3], digits=4))
-        end
+        fileN *= "NS_Mag_"*string(round(NS_vel_M, digits=5))*"NS_Theta_"*string(round(NS_vel_T, digits=3))
         fileN *= "_"*file_tag*"_.npz";
         
         if i == 1
@@ -903,15 +877,7 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
     fileS *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
     fileS *= string(rNS)*"_MassNS_"*string(Mass_NS);
         
-    if v_NS[1] != 0
-        fileS *= "NS_velX_"*string(round(v_NS[1], digits=4))
-    end
-    if v_NS[2] != 0
-        fileS *= "NS_velY_"*string(round(v_NS[2], digits=4))
-    end
-    if v_NS[3] != 0
-        fileS *= "NS_velZ_"*string(round(v_NS[3], digits=4))
-    end
+    fileS *= "NS_Mag_"*string(round(NS_vel_M, digits=5))*"NS_Theta_"*string(round(NS_vel_T, digits=3))
     fileS *= "_"*file_tag*"_.npz";
     npzwrite(fileS, sve_info)
 
