@@ -877,14 +877,14 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
         fileN *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileN *= string(rNS)*"_MassNS_"*string(Mass_NS);
         
-        if NS_vel[1] != 0
-            fileN *= "NS_velX_"*string(round(NS_vel[1], digits=4))
+        if v_NS[1] != 0
+            fileN *= "NS_velX_"*string(round(v_NS[1], digits=4))
         end
-        if NS_vel[2] != 0
-            fileN *= "NS_velY_"*string(round(NS_vel[2], digits=4))
+        if v_NS[2] != 0
+            fileN *= "NS_velY_"*string(round(v_NS[2], digits=4))
         end
-        if NS_vel[3] != 0
-            fileN *= "NS_velZ_"*string(round(NS_vel[3], digits=4))
+        if v_NS[3] != 0
+            fileN *= "NS_velZ_"*string(round(v_NS[3], digits=4))
         end
         fileN *= "_"*file_tag*"_.npz";
         
@@ -903,14 +903,14 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
     fileS *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
     fileS *= string(rNS)*"_MassNS_"*string(Mass_NS);
         
-    if NS_vel[1] != 0
-        fileS *= "NS_velX_"*string(round(NS_vel[1], digits=4))
+    if v_NS[1] != 0
+        fileS *= "NS_velX_"*string(round(v_NS[1], digits=4))
     end
-    if NS_vel[2] != 0
-        fileS *= "NS_velY_"*string(round(NS_vel[2], digits=4))
+    if v_NS[2] != 0
+        fileS *= "NS_velY_"*string(round(v_NS[2], digits=4))
     end
-    if NS_vel[3] != 0
-        fileS *= "NS_velZ_"*string(round(NS_vel[3], digits=4))
+    if v_NS[3] != 0
+        fileS *= "NS_velZ_"*string(round(v_NS[3], digits=4))
     end
     fileS *= "_"*file_tag*"_.npz";
     npzwrite(fileS, sve_info)
