@@ -49,8 +49,8 @@ def Find_Ftransient(NFW=True, nside=8):
         find2 = files[i].find('_rNS_')
         B0 = float(files[i][find1+len('_B0_'):find2])
         
-        possible = np.where(np.round(orig_F[:, 6], 3) == round(periodN, 3))[0]
-        NSIndx = np.where(np.round(orig_F[:,7][possible], 4) == B0)[0]
+        possible = np.where(np.round(orig_F[:, 6], 2) == round(periodN, 2))[0]
+        NSIndx = np.where(np.round(orig_F[:,7][possible], 2) == round(B0, 2))[0]
         print(possible)
         print(NSIndx)
         print(B0, periodN)
