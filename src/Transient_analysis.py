@@ -28,8 +28,8 @@ def Find_Ftransient(NFW=True, nside=8):
     for i in range(len(files)):
         find1 = files[i].find('MassAx_')
         find2 = files[i].find('_ThetaM_')
-        print(files[i], find1, find2)
-        axM = float(files[i][find1+len(find1):find2])
+        
+        axM = float(files[i][find1+len('MassAx_'):find2])
         indx = -1
         # identify mass so we know how to store
         for j in range(len(AxionMass)):
@@ -42,11 +42,11 @@ def Find_Ftransient(NFW=True, nside=8):
         # identify NS in original file
         find1 = files[i].find('_rotPulsar_')
         find2 = files[i].find('_B0_')
-        periodN = float(files[i][find1+len(find1):find2])
+        periodN = float(files[i][find1+len('_rotPulsar_'):find2])
         
         find1 = files[i].find('_B0_')
         find2 = files[i].find('_rNS_')
-        B0 = float(files[i][find1+len(find1):find2])
+        B0 = float(files[i][find1+len('_B0_'):find2])
         
         possible = np.where(np.round(orig_F[:, 6], 4) == periodN)[0]
         NSIndx = np.where(np.round(orig_F[:,7][possible], 4) == B0)[0]
