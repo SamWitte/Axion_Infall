@@ -51,7 +51,6 @@ function main_runner()
     thetaV = acos.(1.0 .- 2.0 .* rand(1));
     # phiV = rand(1) .* 2 .* π;
     phiV = 0.0; # irrelevant, since we period average
-    
     NS_vel = [cos.(phiV) .* sin.(thetaV) sin.(phiV) .* sin.(thetaV) cos.(thetaV)] .* parsed_args["vel"];
     
     Mass_NS = 1.0; # solar mass
@@ -70,10 +69,10 @@ function main_runner()
     
     print(Mass_a, "\t", θm, "\t", ωPul, "\t", B0, "\n")
     for i in 1:n_times
-        @inbounds @fastmath surface_solver(Mass_a, θm, ωPul, B0, rNS, t_list[i], parsed_args["vel"], thetaV; nsteps=10, ln_tstart=-15, ln_tend=ln_tend, ode_err=1e-10, phiVs=phiVs, thetaVs=thetaVs, threshold=threshold, sve=sve);
+        @inbounds @fastmath surface_solver(Mass_a, θm, ωPul, B0, rNS, t_list[i], parsed_args["vel"], thetaV[0]; nsteps=10, ln_tstart=-15, ln_tend=ln_tend, ode_err=1e-10, phiVs=phiVs, thetaVs=thetaVs, threshold=threshold, sve=sve);
     end
-    @inbounds @fastmath main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale, NS_vel_M=parsed_args["vel"], NS_vel_T=thetaV, file_tag=file_tag, RadApprox=false, phiVs=phiVs, thetaVs=thetaVs)
-    period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale,  NS_vel_M=parsed_args["vel"], NS_vel_T=thetaV, file_tag=file_tag, RadApprox=false)
+    @inbounds @fastmath main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale, NS_vel_M=parsed_args["vel"], NS_vel_T=thetaV[0], file_tag=file_tag, RadApprox=false, phiVs=phiVs, thetaVs=thetaVs)
+    period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale,  NS_vel_M=parsed_args["vel"], NS_vel_T=thetaV[0], file_tag=file_tag, RadApprox=false)
 
 end
 
