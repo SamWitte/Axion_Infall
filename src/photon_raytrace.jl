@@ -638,7 +638,7 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; n
         fileTail = "PhaseSpace_Map_AxionM_"*string(Mass_a)*"_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileTail *= "Time_"*string(t_in)*"_sec_"
         
-        fileTail *= "NS_Mag_"*string(round(NS_vel_M, digits=5))*"NS_Theta_"*string(round(NS_vel_T, digits=3))
+        fileTail *= "_NS_Mag_"*string(round(NS_vel_M, digits=5))*"_NS_Theta_"*string(round(NS_vel_T, digits=3))
         
         fileTail *= "_.npz"
         npzwrite(dirN*"SurfaceX_"*fileTail, SurfaceX[1:(cnt-1),:])
@@ -785,7 +785,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         fileN *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileN *= string(rNS)*"_MassNS_"*string(Mass_NS);
         
-        fileN *= "NS_Mag_"*string(round(NS_vel_M, digits=5))*"NS_Theta_"*string(round(NS_vel_T, digits=3))
+        fileN *= "_NS_Mag_"*string(round(NS_vel_M, digits=5))*"_NS_Theta_"*string(round(NS_vel_T, digits=3))
         fileN *= "_"*file_tag*"_.npz";
         npzwrite(fileN, SaveAll)
     end
@@ -859,7 +859,7 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
         fileN *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileN *= string(rNS)*"_MassNS_"*string(Mass_NS);
         
-        fileN *= "NS_Mag_"*string(round(NS_vel_M, digits=5))*"NS_Theta_"*string(round(NS_vel_T, digits=3))
+        fileN *= "_NS_Mag_"*string(round(NS_vel_M, digits=5))*"_NS_Theta_"*string(round(NS_vel_T, digits=3))
         fileN *= "_"*file_tag*"_.npz";
         
         if i == 1
@@ -877,7 +877,7 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
     fileS *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
     fileS *= string(rNS)*"_MassNS_"*string(Mass_NS);
         
-    fileS *= "NS_Mag_"*string(round(NS_vel_M, digits=5))*"NS_Theta_"*string(round(NS_vel_T, digits=3))
+    fileS *= "_NS_Mag_"*string(round(NS_vel_M, digits=5))*"_NS_Theta_"*string(round(NS_vel_T, digits=3))
     fileS *= "_"*file_tag*"_.npz";
     npzwrite(fileS, sve_info)
 

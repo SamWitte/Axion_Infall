@@ -44,8 +44,9 @@ def Stripped_Files_For_RT(fileN, num_ns):
             continue
     
         for j in range(len(AxionMass)):
+            thetV = np.arccos(1.0 - 2.0 * np.random.rand())
             cmd = 'julia Transient_runner.jl ' +\
-                    '--B0 {:.3e} --P {:.4f} --ThetaM {:.3f} --mass {:.3e} --vel {:.4e} \n '.format(B0, Period, ThetaM, AxionMass[j], velnorm)
+                    '--B0 {:.3e} --P {:.4f} --ThetaM {:.3f} --mass {:.3e} --vel {:.4e} --thetaV {:.4f} \n '.format(B0, Period, ThetaM, AxionMass[j], velnorm, thetV)
                     
             cmds.append(cmd)
 
