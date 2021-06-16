@@ -551,6 +551,23 @@ function solve_vel_CS(θ, ϕ, r, NS_vel; guess=[0.1 0.1 0.1])
     return soln.zero
 end
 
+function jacobian_Lville(θ, ϕ, r, NS_vel, v_surf)
+    ff = sum(NS_vel.^2); # unitless
+    GM = 132698000000.0 ./ (2.998e5 .^ 2) # km
+    GMr = GM ./ r ; # unitless
+    rhat = [sin.(θ) .* cos.(ϕ) sin.(θ) .* sin.(ϕ) cos.(θ)]
+    vx, vy, vz = v_surf
+    dvx_vx = 1.0 .+ GM .* (-GM .- ff .* r .+ sqrt.(ff) .* r .* (vz .* sin.(θ) .* cos.(ϕ).^2 .+ vy .* sin.(ϕ))) ./ (GM .+ ff.*r .- sqrt.(ff).*r .* (vz .* cos.(θ) .+ sin.(θ) .* (vx .* cos.(ϕ) .+ vy .* sin.(ϕ)) )).^2
+    dvy_vy_numer_1 = ((sqrt.(ff) .- vz .* cos.(θ) .- vx.*sin.(θ).*cos.(ϕ)) .* (GM .+ ff .* r .- sqrt.(ff).*r .* (vz .* cos.(θ) .+ vx .* sin.(θ) .* cos.(ϕ))) );
+    dvy_vy_numer_2 = 2 .* vy .* sin.(θ) .* (-GM .- ff .* r .+ sqrt.(ff) .* r .* (vz .* cos.(θ) .+ vx .* sin.(θ) .* cos.(ϕ))) .* sin.(ϕ) .+ sqrt.(ff) .* (GM .+ r .* vy.^2).*sin.(ϕ).^2 .* sin.(θ).^2;
+    dvy_vy_numer = sqrt.(ff).*r.*(dvy_vy_numer_1 .+ dvy_vy_numer_2);
+    dvy_vy_denom = (GM .+ ff.*r .- sqrt.(ff).*r .* (vz .* cos.(θ) .+ sin.(θ) .* (vx .* cos.(ϕ) .+ vy .* sin.(ϕ)) )).^2
+    dvy_vy = dvy_vy_numer / dvy_vy_denom;
+    dvz_vz = 1.0 .+ GM .* (-GM .- ff .* r .+ sqrt.(ff) .* r .* (vz .* sin.(θ) .* cos.(ϕ).^2 .+ vy .* sin.(ϕ))) ./ (GM .+ ff.*r .- sqrt.(ff).*r .* (vz .* cos.(θ) .+ sin.(θ) .* (vx .* cos.(ϕ) .+ vy .* sin.(ϕ)) )).^2
+    # print(abs.(dvx_vx).^(-1.0),"\t", abs.(dvy_vy).^(-1.0), "\t", abs.(dvz_vz).^(-1.0), "\t")
+    return abs.(dvx_vx).^(-1.0) .* abs.(dvy_vy).^(-1.0) .* abs.(dvz_vz).^(-1.0)
+end
+
 function test_vs_soln(θ, ϕ, r, NS_vel, x)
     ff = sum(NS_vel.^2); # unitless
     G = 132698000000.0 # km M_odot^-1 * (km/s)^2
@@ -581,6 +598,7 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; n
     
     SurfaceX = zeros(2 * length(ConvR_Cut[:,1]), 3)
     SurfaceV = zeros(2 * length(ConvR_Cut[:,1]), 3)
+    SurfaceDen = zeros(2 * length(ConvR_Cut[:,1]))
     cnt = 1;
     
     MagnetoVars = [θm, ωPul, B0, rNS, [1.0 1.0], t_in]
@@ -592,10 +610,10 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; n
         
         velV = solve_vel_CS(θ, ϕ, r, NS_vel, guess=[vGu vGu vGu])
         velV2 = solve_vel_CS(θ, ϕ, r, NS_vel, guess=[-vGu -vGu -vGu])
+        
         vel_init = [velV; velV2];
-        # print(vel_init, "\n")
-        # vel_init = [velV; -1.0 .* velV];
-        # print(vel_init,"\n")
+        dense_enhance = [jacobian_Lville(θ, ϕ, r, NS_vel, velV) ;  jacobian_Lville(θ, ϕ, r, NS_vel, velV2)]
+        # print("\n")
         x_init = [r .* sin.(θ) .* cos.(ϕ) r .* sin.(θ) .* sin.(ϕ) r .* cos.(θ); r .* sin.(θ) .* cos.(ϕ) r .* sin.(θ) .* sin.(ϕ) r .* cos.(θ)]
         xF, vF = RT.propagateAxion(x_init, vel_init, nsteps, NumerP);
         
@@ -605,7 +623,7 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; n
             finalV[cnt, :] = vF[1, :, end];
             SurfaceX[cnt, :] = xF[1, :, 1];
             SurfaceV[cnt, :] = vF[1, :, 1];
-            
+            SurfaceDen[cnt] = dense_enhance[1];
             
             cnt += 1;
         # else
@@ -619,7 +637,7 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; n
             finalV[cnt, :] = vF[2, :, end];
             SurfaceX[cnt, :] = xF[2, :, 1];
             SurfaceV[cnt, :] = vF[2, :, 1];
-            
+            SurfaceDen[cnt] = dense_enhance[2];
             
             cnt += 1;
         # else
@@ -645,8 +663,10 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; n
         npzwrite(dirN*"SurfaceV_"*fileTail, SurfaceV[1:(cnt-1),:])
         npzwrite(dirN*"FinalX_"*fileTail, finalX[1:(cnt-1),:])
         npzwrite(dirN*"FinalV_"*fileTail, finalV[1:(cnt-1),:])
+        npzwrite(dirN*"SurfaceDen_"*fileTail, SurfaceDen[1:(cnt-1),:])
         npzwrite(dirN*"dkdz_"*fileTail, dkdl)
         npzwrite(dirN*"ctheta_"*fileTail, ctheta)
+        
     else
         return SurfaceX[1:(cnt-1),:], SurfaceV[1:(cnt-1),:], finalX[1:(cnt-1),:], finalV[1:(cnt-1),:], dkdl, ctheta
     end
@@ -713,12 +733,14 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         sfv_fnme = dirN*"SurfaceV_"*fileTail
         sfdk_fnme = dirN*"dkdz_"*fileTail
         sfct_fnme = dirN*"ctheta_"*fileTail
+        sfden_fnme = dirN*"SurfaceDen_"*fileTail
         
         if isfile(sfx_fnme)&&isfile(sfv_fnme)&&isfile(sfdk_fnme)&&isfile(sfct_fnme)
             SurfaceX = npzread(sfx_fnme)
             SurfaceV = npzread(sfv_fnme)
             dkdl = npzread(sfdk_fnme)
             ctheta = npzread(sfct_fnme)
+            surfaceDen = npzread(sfden_fnme)
         else
             print(sfx_fnme,"\n")
             print("files not generated....\n\n")
@@ -776,7 +798,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         
         dS = rr.^2 .* sin.(acos.(SurfaceX[:, 3] ./ rr)) .* dθ .* dϕ;
         # assume number density at each point 1 / cm^3
-        SaveAll[:, 6] .= 1.0 .* dS[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons -- note i've neglected rho! multiply by rho to get L in eV/s
+        SaveAll[:, 6] .= 1.0 .* dS[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10 .* surfaceDen[:]; # num photons -- note i've neglected rho! multiply by rho to get L in eV/s
         if !RadApprox
             SaveAll[:, 6] .*= ctheta[:];
         end
