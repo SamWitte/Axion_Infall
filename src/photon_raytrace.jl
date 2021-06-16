@@ -598,7 +598,7 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; n
     
     SurfaceX = zeros(2 * length(ConvR_Cut[:,1]), 3)
     SurfaceV = zeros(2 * length(ConvR_Cut[:,1]), 3)
-    SurfaceDen = zeros(2 * length(ConvR_Cut[:,1]))
+    # SurfaceDen = zeros(2 * length(ConvR_Cut[:,1]))
     cnt = 1;
     
     MagnetoVars = [θm, ωPul, B0, rNS, [1.0 1.0], t_in]
@@ -612,7 +612,7 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; n
         velV2 = solve_vel_CS(θ, ϕ, r, NS_vel, guess=[-vGu -vGu -vGu])
         
         vel_init = [velV; velV2];
-        dense_enhance = [jacobian_Lville(θ, ϕ, r, NS_vel, velV) ;  jacobian_Lville(θ, ϕ, r, NS_vel, velV2)]
+        # dense_enhance = [jacobian_Lville(θ, ϕ, r, NS_vel, velV) ;  jacobian_Lville(θ, ϕ, r, NS_vel, velV2)]
         # print("\n")
         x_init = [r .* sin.(θ) .* cos.(ϕ) r .* sin.(θ) .* sin.(ϕ) r .* cos.(θ); r .* sin.(θ) .* cos.(ϕ) r .* sin.(θ) .* sin.(ϕ) r .* cos.(θ)]
         xF, vF = RT.propagateAxion(x_init, vel_init, nsteps, NumerP);
@@ -623,7 +623,7 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; n
             finalV[cnt, :] = vF[1, :, end];
             SurfaceX[cnt, :] = xF[1, :, 1];
             SurfaceV[cnt, :] = vF[1, :, 1];
-            SurfaceDen[cnt] = dense_enhance[1];
+            # SurfaceDen[cnt] = dense_enhance[1];
             
             cnt += 1;
         # else
@@ -637,7 +637,7 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; n
             finalV[cnt, :] = vF[2, :, end];
             SurfaceX[cnt, :] = xF[2, :, 1];
             SurfaceV[cnt, :] = vF[2, :, 1];
-            SurfaceDen[cnt] = dense_enhance[2];
+            # SurfaceDen[cnt] = dense_enhance[2];
             
             cnt += 1;
         # else
@@ -663,7 +663,7 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; n
         npzwrite(dirN*"SurfaceV_"*fileTail, SurfaceV[1:(cnt-1),:])
         npzwrite(dirN*"FinalX_"*fileTail, finalX[1:(cnt-1),:])
         npzwrite(dirN*"FinalV_"*fileTail, finalV[1:(cnt-1),:])
-        npzwrite(dirN*"SurfaceDen_"*fileTail, SurfaceDen[1:(cnt-1),:])
+        # npzwrite(dirN*"SurfaceDen_"*fileTail, SurfaceDen[1:(cnt-1),:])
         npzwrite(dirN*"dkdz_"*fileTail, dkdl)
         npzwrite(dirN*"ctheta_"*fileTail, ctheta)
         
@@ -696,7 +696,7 @@ function test_runner_surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M,
 
 end
 
-function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, NS_vel_M=0.0, NS_vel_T=0.0, RadApprox=false, phiVs=100, thetaVs=100)
+function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, NS_vel_M=0.0, NS_vel_T=0.0, RadApprox=false, phiVs=100, thetaVs=100, vel_disp=1.0)
 
     NS_vel = [sin.(NS_vel_T) 0.0 cos.(NS_vel_T)] .* NS_vel_M;
     RT = RayTracer; # define ray tracer module
@@ -733,14 +733,14 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         sfv_fnme = dirN*"SurfaceV_"*fileTail
         sfdk_fnme = dirN*"dkdz_"*fileTail
         sfct_fnme = dirN*"ctheta_"*fileTail
-        sfden_fnme = dirN*"SurfaceDen_"*fileTail
+        # sfden_fnme = dirN*"SurfaceDen_"*fileTail
         
         if isfile(sfx_fnme)&&isfile(sfv_fnme)&&isfile(sfdk_fnme)&&isfile(sfct_fnme)
             SurfaceX = npzread(sfx_fnme)
             SurfaceV = npzread(sfv_fnme)
             dkdl = npzread(sfdk_fnme)
             ctheta = npzread(sfct_fnme)
-            surfaceDen = npzread(sfden_fnme)
+            # surfaceDen = npzread(sfden_fnme)
         else
             print(sfx_fnme,"\n")
             print("files not generated....\n\n")
@@ -798,7 +798,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         
         dS = rr.^2 .* sin.(acos.(SurfaceX[:, 3] ./ rr)) .* dθ .* dϕ;
         # assume number density at each point 1 / cm^3
-        SaveAll[:, 6] .= 1.0 .* dS[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10 .* surfaceDen[:]; # num photons -- note i've neglected rho! multiply by rho to get L in eV/s
+        SaveAll[:, 6] .= 1.0 .* dS[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons -- note i've neglected rho! multiply by rho to get L in eV/s
+        SaveAll[:, 6] .*= 2 ./ sqrt.(π) .* sqrt.(132698000000.0 ./ (2.998e5 .^ 2) ./ rr) ./ (vel_disp ./ 2.998e5);
         if !RadApprox
             SaveAll[:, 6] .*= ctheta[:];
         end

@@ -1,8 +1,8 @@
 import os
 import numpy as np
 
-fileN = '../encounter_data/Interaction_params_NFW_AScut_wStripping.txt'
-#fileN = '../encounter_data/Interaction_params_PL_AScut_wStripping.txt'
+# fileN = '../encounter_data/Interaction_params_NFW_AScut_wStripping.txt'
+fileN = '../encounter_data/Interaction_params_PL_AScut_wStripping.txt'
 Nruns = 1000
 
 def Stripped_Files_For_RT(fileN, num_ns):
@@ -12,6 +12,11 @@ def Stripped_Files_For_RT(fileN, num_ns):
         loadF = loadF[selct_ints,:]
     else:
         num_ns = len(loadF[:,0])
+        
+    if fileN.find('NFW') > 0:
+        kap = 3.54
+    else:
+        kap = 1.73
         
     result_dict = np.load("Population_Histogram.npz")
     flat_histogram = result_dict['Histogram'].flatten()
@@ -24,6 +29,11 @@ def Stripped_Files_For_RT(fileN, num_ns):
     glat = loadF[:, 2]
     velM = loadF[:, -1] * 3.086e+13 / 2.998e5
     
+    DENamcL = loadF[:, 3]
+    RamcL = loadF[:, 4]
+    MamcL = RamcL**3 * 4*np.pi/3 * DENamcL
+    velDisp = np.sqrt(kap * 4.3e-3 * MamcL / RamcL) # km/s
+    # print(np.mean(np.sqrt(kap * 4.3e-3 * MamcL / RamcL)), np.median(np.sqrt(kap * 4.3e-3 * MamcL / RamcL)))
     script_dir = "scripts"
     
     cnt = 1
@@ -40,13 +50,17 @@ def Stripped_Files_For_RT(fileN, num_ns):
         glg = glong[i]
         glt = glat[i]
         velnorm = velM[i]
+        
+        
+        
+        
         if np.sqrt(glt**2 + glg**2) > 1:
             continue
     
         for j in range(len(AxionMass)):
             thetV = np.arccos(1.0 - 2.0 * np.random.rand())
             cmd = 'julia Transient_runner.jl ' +\
-                    '--B0 {:.3e} --P {:.4f} --ThetaM {:.3f} --mass {:.3e} --vel {:.4e} --thetaV {:.4f} \n '.format(B0, Period, ThetaM, AxionMass[j], velnorm, thetV)
+                    '--B0 {:.3e} --P {:.4f} --ThetaM {:.3f} --mass {:.3e} --vel {:.4e} --thetaV {:.4f} --velDisp {:.3e} \n '.format(B0, Period, ThetaM, AxionMass[j], velnorm, thetV, velDisp[i])
                     
             cmds.append(cmd)
 

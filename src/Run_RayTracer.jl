@@ -14,10 +14,11 @@ Mass_NS=1;
 B0 = 1e14;
 rNS = 10;
 NS_vel_M = 200.0 ./ 2.998e5;
-NS_vel_T = 0.0;
-n_times = 20;
+NS_vel_T = 0.1;
+vel_disp = 1e-5; # km/s, velocity dispersion of AMC
+n_times = 2;
 t_list = LinRange(0.0, 2.0 * π / ωPul, n_times)
-CLen_Scale = false
+CLen_Scale = true
 
 phiVs = 20
 thetaVs = 20
@@ -27,7 +28,7 @@ sve = true;
 
 file_tag = ""
 RadApprox = false
-run_surface = false
+run_surface = true
 
 function run_all()
     if !RadApprox && run_surface
@@ -36,8 +37,8 @@ function run_all()
         end
     end
 
-    main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-7, CLen_Scale=CLen_Scale, NS_vel_M=NS_vel_M, NS_vel_T=NS_vel_T, file_tag=file_tag, RadApprox=RadApprox, phiVs=phiVs, thetaVs=thetaVs)
-    period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-7, CLen_Scale=CLen_Scale, NS_vel_M=NS_vel_M, NS_vel_T=NS_vel_T, file_tag=file_tag, RadApprox=RadApprox)
+    main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale, NS_vel_M=NS_vel_M, NS_vel_T=NS_vel_T, file_tag=file_tag, RadApprox=RadApprox, phiVs=phiVs, thetaVs=thetaVs, velDisp=vel_disp)
+    period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale, NS_vel_M=NS_vel_M, NS_vel_T=NS_vel_T, file_tag=file_tag, RadApprox=RadApprox)
 end
 
 run_all()
