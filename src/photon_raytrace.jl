@@ -706,7 +706,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         
         fileTail = "PhaseSpace_Map_AxionM_"*string(Mass_a)*"_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileTail *= "Time_"*string(t_in)*"_sec_"
-        fileTail *= "NS_Mag_"*string(round(NS_vel_M, digits=5))*"NS_Theta_"*string(round(NS_vel_T, digits=3))
+        fileTail *= "_NS_Mag_"*string(round(NS_vel_M, digits=5))*"_NS_Theta_"*string(round(NS_vel_T, digits=3))
         fileTail *= "_.npz"
         
         sfx_fnme = dirN*"SurfaceX_"*fileTail
