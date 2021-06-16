@@ -36,6 +36,10 @@ function parse_commandline()
             arg_type = Float64
             default = 0.000
             
+        "--velDisp"
+            arg_type = Float64
+            default = 1.0e-5
+            
     end
 
     return parse_args(s)
@@ -75,7 +79,7 @@ function main_runner()
     for i in 1:n_times
         @inbounds @fastmath surface_solver(Mass_a, θm, ωPul, B0, rNS, t_list[i], parsed_args["vel"], parsed_args["thetaV"]; nsteps=10, ln_tstart=-15, ln_tend=ln_tend, ode_err=1e-10, phiVs=phiVs, thetaVs=thetaVs, threshold=threshold, sve=sve);
     end
-    @inbounds @fastmath main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale, NS_vel_M=parsed_args["vel"], NS_vel_T=parsed_args["thetaV"], file_tag=file_tag, RadApprox=false, phiVs=phiVs, thetaVs=thetaVs)
+    @inbounds @fastmath main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale, NS_vel_M=parsed_args["vel"], NS_vel_T=parsed_args["thetaV"], file_tag=file_tag, RadApprox=false, phiVs=phiVs, thetaVs=thetaVs, velDisp=velDisp)
     period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale,  NS_vel_M=parsed_args["vel"], NS_vel_T=parsed_args["thetaV"], file_tag=file_tag, RadApprox=false)
 
 end

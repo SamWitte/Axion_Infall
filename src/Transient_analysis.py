@@ -10,7 +10,14 @@ NFW = True
 nside = 8
 
 # run through each mass and each NS, determine coupling for which this would be observable
-def Find_Ftransient(NFW=True, nside=8):
+
+def sense_compute(mass, bwdith=1e-4, t_obs=1, SNR=5):
+    # t_obs days, bwidth fractional
+    SEFD = 0.098*1e3 #mJy
+    return SNR * SEFD / np.sqrt(2 * mass * bwidth * t_obs * 24 * 60**2 / 6.58e-16)
+    
+def Find_Ftransient(NFW=True, nside=8, t_obs=1):
+    # t_obs in days
     # For now im computing min flux from SEFD = 0.098Jy, t_obs = 1 second, bandwidth 1e-4, and we take SNR = 5
     # this gives (for each mass): [0.177, 0.079, 0.0562, 0.032] mJy
     if NFW:
@@ -87,7 +94,7 @@ def Find_Ftransient(NFW=True, nside=8):
         rate *= np.trapz(dense_scan, tlist) * (1 / (dist * 3.086*10**18))**2 * 1.6022e-12 # erg / s / cm^2
         bwidth = axM * 1e-4 / 6.58e-16 # Hz
         rate *= (1/bwidth) * 1e26 # mJy
-        glim = np.sqrt(fluxD_thresh[indx] / rate) * 1e-12 # GeV^-1
+        glim = np.sqrt(sense_compute(axM, bwdith=bwdith, t_obs=t_obs, SNR=5)  / rate) * 1e-12 # GeV^-1
         glist[indx].append(glim)
 
     if not os.path.isdir("amc_glims"):

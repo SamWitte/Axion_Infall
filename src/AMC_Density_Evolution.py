@@ -31,9 +31,8 @@ def AMC_DensityEval(b, M, v_NS, t, rho_amc):
     return density
     
     
-def Transient_Time(b, r_amc, rho_amc, v_NS):
-    # assume b [km], v_NS [vector unitless]
-    
+def Transient_Time(b, r_amc, v_NS):
+    # assume b [km], v_NS [vector unitless], rmac km
     delD = np.sqrt(r_amc**2 - b**2)  # b in km
     return 2 * delD / v_NS / 2.998e5 # s
 
