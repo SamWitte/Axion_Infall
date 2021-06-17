@@ -37,7 +37,7 @@ def Transient_Time(b, r_amc, v_NS):
     return 2 * delD / v_NS / 2.998e5 # s
 
 def Transient_AMC_DensityEval(b, r_amc, rho_amc, v_NS, t, nfw=True):
-    # t in s?
+    # t in s
     delD = np.sqrt(r_amc**2 - b**2)  # b in km
     vel = np.sqrt(np.sum(v_NS**2)) * 2.998e5 # km /s
     r = np.sqrt((delD - vel * t)**2 + b**2)

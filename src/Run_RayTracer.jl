@@ -37,7 +37,7 @@ function run_all()
         end
     end
 
-    main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale, NS_vel_M=NS_vel_M, NS_vel_T=NS_vel_T, file_tag=file_tag, RadApprox=RadApprox, phiVs=phiVs, thetaVs=thetaVs, velDisp=vel_disp)
+    main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale, NS_vel_M=NS_vel_M, NS_vel_T=NS_vel_T, file_tag=file_tag, RadApprox=RadApprox, phiVs=phiVs, thetaVs=thetaVs, vel_disp=vel_disp)
     period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale, NS_vel_M=NS_vel_M, NS_vel_T=NS_vel_T, file_tag=file_tag, RadApprox=RadApprox)
 end
 
