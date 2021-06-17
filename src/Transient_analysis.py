@@ -11,12 +11,12 @@ nside = 8
 
 # run through each mass and each NS, determine coupling for which this would be observable
 
-def sense_compute(mass, bwdith=1e-4, t_obs=1, SNR=5):
+def sense_compute(mass, bwidth=1e-4, t_obs=1, SNR=5):
     # t_obs days, bwidth fractional
     SEFD = 0.098*1e3 #mJy
     return SNR * SEFD / np.sqrt(2 * mass * bwidth * t_obs * 24 * 60**2 / 6.58e-16)
     
-def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwdith=1e-4):
+def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=1e-4):
     # t_obs in days
 
     if NFW:
