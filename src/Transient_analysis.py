@@ -79,7 +79,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=1e-4):
         indxs = hp.nside2npix(nside)
         viewA = int(np.random.rand(1) * indxs)
         rel_rows = file_in[pixel_indices == viewA]
-        if len(rel_row[:,0]) == 0:
+        if len(rel_rows[:,0]) == 0:
             print('No photons....')
         rate = np.sum(rel_rows[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
         
