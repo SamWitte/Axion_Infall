@@ -342,11 +342,9 @@ function tau_cyc(x0, k0, tarr, Mvars, Mass_a)
     dOc_dl[kmag .> 0] ./= kmag[kmag .> 0]
     tau = π * ωp .^2 ./ dOc_dl ./ (2.998e5 .* 6.58e-16);
     
-    if sum(kmag .= 0) > 0
+    if sum(kmag .== 0) > 0
         tau[kmag .== 0] .= 0.0
-        
     end
-    
     
     return tau
 end
@@ -882,7 +880,8 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
     end
 
     dirN = "temp_storage/"
-
+    
+    started = false;
     for i in 1:length(t_list)
         t_in = t_list[i]
         
@@ -892,9 +891,13 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
         
         fileN *= "_NS_Mag_"*string(round(NS_vel_M, digits=5))*"_NS_Theta_"*string(round(NS_vel_T, digits=3))
         fileN *= "_"*file_tag*"_.npz";
+        if !isfile(fileN)
+            continue
+        end
         
-        if i == 1
+        if !started
             global sve_info = npzread(fileN)
+            started = true;
         else
             hold = npzread(fileN)
             sve_info = vcat((sve_info, hold)...)
