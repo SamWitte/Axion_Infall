@@ -903,7 +903,7 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
     end
     
     sve_info = sve_info[sve_info[:,6] .> 0, :];
-    if len(sve_info[:,6]) > 0
+    if length(sve_info[:,6]) > 0
         period = 2 .* π ./ ωPul;
         sve_info[:, 6] ./= period;
         
