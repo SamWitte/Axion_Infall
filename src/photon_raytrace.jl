@@ -740,7 +740,9 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
             SurfaceV = npzread(sfv_fnme)
             dkdl = npzread(sfdk_fnme)
             ctheta = npzread(sfct_fnme)
-            # surfaceDen = npzread(sfden_fnme)
+            if length(SurfaceX) == 0
+                continue
+            end
         else
             print(sfx_fnme,"\n")
             print("files not generated....\n\n")
