@@ -56,10 +56,10 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=1e-4):
         
         possible = np.where(np.round(orig_F[:, 6], 3) == round(periodN, 3))[0]
         NSIndx = np.where(np.round(orig_F[:,7][possible] / B0, 3) == 1)[0]
-        print(possible)
-        print(NSIndx)
-        print(B0, periodN)
-        print(orig_F[:,7][possible])
+        # print(possible)
+        # print(NSIndx)
+        # print(B0, periodN)
+        # print(orig_F[:,7][possible])
         dist = orig_F[NSIndx, 0] # pc
         dens_amc = orig_F[NSIndx, 3] # M/pc^3
         rad_amc = orig_F[NSIndx, 4] # pc
@@ -88,8 +88,8 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=1e-4):
         dense_scan = np.zeros_like(tlist)
         for j in range(len(tlist)):
             dense_scan[j] = Transient_AMC_DensityEval(bparam, rad_amc, dens_amc, vel, tlist[j], nfw=NFW)
-        
-        print(np.trapz(dense_scan, tlist) / (2*t_shift), rate)
+            print(dense_scan[j])
+        print(np.trapz(dense_scan, tlist) , rate)
         rate *= np.trapz(dense_scan, tlist) / (2*t_shift) * (1 / (dist * 3.086*10**18))**2 * 1.6022e-12 # erg / s / cm^2
         bw_norm = axM * bwidth / 6.58e-16 # Hz
         rate *= (1/bw_norm) * 1e26 # mJy
