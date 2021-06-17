@@ -898,6 +898,7 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
         if !started
             sve_info = npzread(fileN)
             if length(sve_info[:, 1]) .> 0
+                print(sve_info, "\n")
                 started = true;
             end
         else
