@@ -881,6 +881,8 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
 
     dirN = "temp_storage/"
     
+    sve_info = zeros(2, 7);
+    
     for i in 1:length(t_list)
         t_in = t_list[i]
         
@@ -891,29 +893,26 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
         fileN *= "_NS_Mag_"*string(round(NS_vel_M, digits=5))*"_NS_Theta_"*string(round(NS_vel_T, digits=3))
         fileN *= "_"*file_tag*"_.npz";
         
+        if !isfile(fileN)
+            continue
         
-        if i == 1
-            if !isfile(fileN)
-                return
-            end
-            sve_info = npzread(fileN)
-            
-        else
-            hold = npzread(fileN)
-            sve_info = vcat((sve_info, hold)...)
-        end
+        hold = npzread(fileN)
+        sve_info = vcat((sve_info, hold)...)
+        
     end
     
-    
-    period = 2 .* π ./ ωPul;
-    sve_info[:, 6] ./= period;
-    
-    fileS = fileN = "results/Minicluster_PeriodAvg_MassAx_"*string(Mass_a);
-    fileS *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
-    fileS *= string(rNS)*"_MassNS_"*string(Mass_NS);
+    sve_info = sve_info[sve_info[:,6] .> 0, :];
+    if len(sve_info[:,6]) > 0
+        period = 2 .* π ./ ωPul;
+        sve_info[:, 6] ./= period;
         
-    fileS *= "_NS_Mag_"*string(round(NS_vel_M, digits=5))*"_NS_Theta_"*string(round(NS_vel_T, digits=3))
-    fileS *= "_"*file_tag*"_.npz";
-    npzwrite(fileS, sve_info)
-
+        fileS = fileN = "results/Minicluster_PeriodAvg_MassAx_"*string(Mass_a);
+        fileS *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
+        fileS *= string(rNS)*"_MassNS_"*string(Mass_NS);
+            
+        fileS *= "_NS_Mag_"*string(round(NS_vel_M, digits=5))*"_NS_Theta_"*string(round(NS_vel_T, digits=3))
+        fileS *= "_"*file_tag*"_.npz";
+        npzwrite(fileS, sve_info)
+    end
+    
 end
