@@ -91,9 +91,9 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=1e-4):
             
         # print(dense_scan, dist)
         rate *= np.trapz(dense_scan, tlist) * (1 / (dist * 3.086*10**18))**2 * 1.6022e-12 # erg / s / cm^2
-        bwidth = axM * 1e-4 / 6.58e-16 # Hz
-        rate *= (1/bwidth) * 1e26 # mJy
-        glim = np.sqrt(sense_compute(axM, bwdith=bwdith, t_obs=t_obs, SNR=5)  / rate) * 1e-12 # GeV^-1
+        bw_norm = axM * bwidth / 6.58e-16 # Hz
+        rate *= (1/bw_norm) * 1e26 # mJy
+        glim = np.sqrt(sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5)  / rate) * 1e-12 # GeV^-1
         glist[indx].append(glim)
 
     if not os.path.isdir("amc_glims"):
