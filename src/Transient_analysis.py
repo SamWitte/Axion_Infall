@@ -18,15 +18,13 @@ def sense_compute(mass, bwdith=1e-4, t_obs=1, SNR=5):
     
 def Find_Ftransient(NFW=True, nside=8, t_obs=1):
     # t_obs in days
-    # For now im computing min flux from SEFD = 0.098Jy, t_obs = 1 second, bandwidth 1e-4, and we take SNR = 5
-    # this gives (for each mass): [0.177, 0.079, 0.0562, 0.032] mJy
+
     if NFW:
         orig_F = np.loadtxt('../encounter_data/Interaction_params_NFW_AScut_wStripping.txt')
     else:
         orig_F = np.loadtxt('../encounter_data/Interaction_params_PL_AScut_wStripping.txt')
         
     AxionMass = [1.0e-6, 5.0e-6, 1.0e-5, 3.0e-5] # eV
-    fluxD_thresh = [0.177, 0.079, 0.0562, 0.032] # mJy
     glist = np.zeros(len(AxionMass), dtype=object)
     for i in range(len(AxionMass)):
         glist[i] = []
@@ -57,7 +55,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1):
         B0 = float(files[i][find1+len('_B0_'):find2])
         
         possible = np.where(np.round(orig_F[:, 6], 3) == round(periodN, 3))[0]
-        NSIndx = np.where(np.round(orig_F[:,7][possible], 3) == round(B0, 3))[0]
+        NSIndx = np.where(np.round(orig_F[:,7][possible], 2) == round(B0, 2))[0]
         print(possible)
         print(NSIndx)
         print(B0, periodN)
@@ -83,7 +81,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1):
         
         rate = np.sum(rel_rows[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
         
-        t_shift = 0.5 # seconds
+        t_shift = t_obs / 2 * 24 * 60**2 # seconds
         t_mid = Transient_Time(bparam, rad_amc, vel) / 2
         tlist = np.linspace(t_mid - t_shift, t_mid + t_shift, 200)
         dense_scan = np.zeros_like(tlist)
