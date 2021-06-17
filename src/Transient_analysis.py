@@ -59,6 +59,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1):
         print(possible)
         print(NSIndx)
         print(B0, periodN)
+        print(orig_F[:,7][possible])
         dist = orig_F[NSIndx, 0] # pc
         dens_amc = orig_F[NSIndx, 3] # M/pc^3
         rad_amc = orig_F[NSIndx, 4] # pc
