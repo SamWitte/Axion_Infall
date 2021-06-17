@@ -82,6 +82,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=1e-4):
         if len(rel_rows[:,0]) == 0:
             print('No photons....')
         rate = np.sum(rel_rows[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
+        print('rel rows...', rel_rows[:,5])
         
         t_shift = t_obs / 2.0 * 24.0 * 60.0**2 # seconds
         t_mid = Transient_Time(bparam, rad_amc, vel) / 2
@@ -90,7 +91,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=1e-4):
         for j in range(len(tlist)):
             dense_scan[j] = Transient_AMC_DensityEval(bparam, rad_amc, dens_amc, vel, tlist[j], nfw=NFW)[0]
 
-        print(np.trapz(dense_scan, tlist) , rate)
+        print(dense_scan, tlist , rate)
         rate *= np.trapz(dense_scan, tlist) / (2*t_shift) * (1 / (dist * 3.086*10**18))**2 * 1.6022e-12 # erg / s / cm^2
         bw_norm = axM * bwidth / 6.58e-16 # Hz
         rate *= (1/bw_norm) * 1e26 # mJy
