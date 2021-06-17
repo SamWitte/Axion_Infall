@@ -881,7 +881,6 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
 
     dirN = "temp_storage/"
     
-    started = false;
     for i in 1:length(t_list)
         t_in = t_list[i]
         
@@ -891,25 +890,20 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
         
         fileN *= "_NS_Mag_"*string(round(NS_vel_M, digits=5))*"_NS_Theta_"*string(round(NS_vel_T, digits=3))
         fileN *= "_"*file_tag*"_.npz";
-        if !isfile(fileN)
-            continue
-        end
         
-        if !started
-            sve_info = npzread(fileN)
-            if length(sve_info[:, 1]) .> 0
-                print(sve_info, "\n")
-                started = true;
+        
+        if i == 1
+            if !isfile(fileN)
+                return
             end
+            sve_info = npzread(fileN)
+            
         else
             hold = npzread(fileN)
             sve_info = vcat((sve_info, hold)...)
         end
     end
     
-    if !started
-        return
-    end
     
     period = 2 .* π ./ ωPul;
     sve_info[:, 6] ./= period;
