@@ -895,6 +895,7 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
         
         if !isfile(fileN)
             continue
+        end
         
         hold = npzread(fileN)
         sve_info = vcat((sve_info, hold)...)
