@@ -8,6 +8,7 @@ import os
 
 NFW = True
 nside = 8
+t_obs = 1.0
 
 # run through each mass and each NS, determine coupling for which this would be observable
 
@@ -90,10 +91,11 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=1e-4):
         for j in range(len(tlist)):
             dense_scan[j] = Transient_AMC_DensityEval(bparam, rad_amc, dens_amc, vel, tlist[j], nfw=NFW)[0]
 
-        print(np.trapz(dense_scan.flatten(), tlist.flatten()) , rate)
-        rate *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (2*t_shift) * (1 / (dist * 3.086*10**18))**2 * 1.6022e-12 # erg / s / cm^2
+        
+        rate *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (2*t_shift)  / (dist * 3.086*10**18))**2 * 1.6022e-12 # erg / s / cm^2
         bw_norm = axM * bwidth / 6.58e-16 # Hz
-        rate *= (1/bw_norm) * 1e26 # mJy
+        rate *= (1.0/bw_norm) * 1e26 # mJy
+        print(rate, sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5))
         glim = np.sqrt(sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5)  / rate) * 1e-12 # GeV^-1
         glist[indx].append(glim)
 
@@ -111,4 +113,4 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=1e-4):
         
     return
 
-Find_Ftransient(NFW=NFW, nside=nside)
+Find_Ftransient(NFW=NFW, nside=nside, t_obs=t_obs)
