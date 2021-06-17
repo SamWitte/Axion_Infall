@@ -84,7 +84,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1):
         rate = np.sum(rel_rows[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
         
         t_shift = 0.5 # seconds
-        t_mid = Transient_Time(bparam, rad_amc, dens_amc, vel) / 2
+        t_mid = Transient_Time(bparam, rad_amc, vel) / 2
         tlist = np.linspace(t_mid - t_shift, t_mid + t_shift, 200)
         dense_scan = np.zeros_like(tlist)
         for j in range(len(tlist)):
