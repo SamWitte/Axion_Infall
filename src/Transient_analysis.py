@@ -74,7 +74,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         else:
             print('index failure...???', holdI)
             print(possible)
-            print(periodN, B0, orig_F[:, 6][possible], orig_F[:, 7][possible], np.round(orig_F[:,7][possible] / B0, 2))
+            print(periodN, B0, orig_F[:, 6][possible], orig_F[:, 7][possible], '{:.4f}'.format(np.round(orig_F[:,7][possible] / B0, 2)))
             return
         # print(possible)
         # print(NSIndx)
