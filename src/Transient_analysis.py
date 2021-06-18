@@ -102,13 +102,15 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         if len(rel_rows[:,0]) == 0 or np.sum(rel_rows[:, 5]) == 0:
             continue
         
-        # bins = np.linspace(np.min(rel_rows[:,6]), np.max(rel_rows[:,6]), 60)
-        # vals, bbs = np.histogram(rel_rows[:,6], bins=bins, weights=rel_rows[:,5])
-        # peakF = (bbs[np.argmax(vals)] + bbs[np.argmax(vals)+1]) / 2
-        peakF = 0.0
-        rel_rows2 = rel_rows[np.abs(peakF - rel_rows[:,6]) <= (bwidth / 2)]
-        rate_TEST = np.sum(rel_rows[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
-        rate = np.sum(rel_rows2[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
+        bins = np.linspace(np.min(rel_rows[:,6]) + bwidth/2, np.max(rel_rows[:,6]) - bwidth/2, 60)
+        rate_hold = np.zeros_like(bins)
+        for kk in range(len(bins)):
+            rate_hold[kk] = np.sum(rel_rows[np.abs(bins[kk] - rel_rows[:,6]) <= (bwidth / 2), 5]) / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
+        peakF = bins[np.argmax(rate_hold)]
+        rate = rate_hold[np.argmax(rate_hold)]
+        # rel_rows2 = rel_rows[np.abs(peakF - rel_rows[:,6]) <= (bwidth / 2)]
+        rate_TEST = np.sum(rel_rows[:, 5])  /hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
+        
         print('Rate ratio: ', rate/rate_TEST, 'max width...', np.max(np.abs(peakF - rel_rows[:,6]) ), '90 percent', np.percentile(np.abs(peakF - rel_rows[:,6]), 90))
         
         t_shift = t_obs / 2.0 * 24.0 * 60.0**2 # seconds
@@ -130,7 +132,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         rate *= fovS
         
         if rate == 0:
-            print(rel_rows2[:, 5])
+            print(rel_rows[:, 5])
             continue
         #print(rate, sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5))
         glim = np.sqrt(sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5)  / rate) * 1e-12 # GeV^-1
@@ -144,7 +146,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
             fileN += "NFW_"
         else:
             fileN += "PL_"
-        fileN += "AxionMass_{:.2e}_".format(AxionMass[i])
+        fileN += "AxionMass_{:.2e}_Bwdith_{:.2e}_Tbin_{:.3f}_days_".format(AxionMass[i])
         fileN += ".dat"
         np.savetxt(fileN, glist[i])
         
