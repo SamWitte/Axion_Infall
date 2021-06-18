@@ -46,12 +46,23 @@ def Transient_AMC_DensityEval(b, r_amc, rho_amc, v_NS, t, nfw=True):
 
     
 def transient_profile(r, r_amc, rho_amc, b, t, nfw=True):
-    if r > r_amc:
-        return 0.0
-    if nfw:
-        c=100
-        rs = r_amc / c
-        den = rho_amc / (r/rs) / (1+r/rs)**2
-    else:
-        den = rho_amc / 4 * (r_amc / r)**(9/4)
+    try:
+        den = np.zeros_like(r)
+        r[r>r_amc] = 0.0
+        if nfw:
+            c=100
+            rs = r_amc / c
+            den[r<=r_amc] = rho_amc / (r/rs) / (1+r/rs)**2
+        else:
+            den[r<=r_amc] = rho_amc / 4 * (r_amc / r)**(9/4)
+    except:
+        if r > r_amc:
+            return 0.0
+        if nfw:
+            c=100
+            rs = r_amc / c
+            den = rho_amc / (r/rs) / (1+r/rs)**2
+        else:
+            den = rho_amc / 4 * (r_amc / r)**(9/4)
+    
     return den

@@ -105,7 +105,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         rel_rows2 = rel_rows[np.abs(peakF - rel_rows[:,6]) <= (bwidth / 2)]
         rate_TEST = np.sum(rel_rows[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
         rate = np.sum(rel_rows2[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
-        print('Rate ratio: ', rate/rate_TEST, 'min max width...', np.max(np.abs(peakF - rel_rows[:,6]) ), np.min(np.abs(peakF - rel_rows[:,6]) ))
+        print('Rate ratio: ', rate/rate_TEST, 'max width...', np.max(np.abs(peakF - rel_rows[:,6]) ), '90 percent', np.percentile(np.abs(peakF - rel_rows[:,6]), 90))
         
         t_shift = t_obs / 2.0 * 24.0 * 60.0**2 # seconds
         t_mid = Transient_Time(bparam, rad_amc, vel) / 2
