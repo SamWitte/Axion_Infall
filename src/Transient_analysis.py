@@ -67,12 +67,13 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         find2 = files[i].find('_rNS_')
         B0 = float(files[i][find1+len('_B0_'):find2])
         
-        possible = np.where(np.round(orig_F[:, 6], 3) == round(periodN, 3))[0]
-        holdI = np.where(np.round(orig_F[:,7][possible] / B0, 3) == 1)
-        if len(holdI) == 1:
-            NSIndx = holdI[0]
+        possible = np.where(np.round(orig_F[:, 6] / periodN, 3) == 1)[0]
+        holdI = np.where(np.round(orig_F[:,7][possible] / B0, 3) == 1)[0]
+        if len(holdI) == 0:
+            NSIndx = holdI
         else:
-            print('too many indicies???', holdI)
+            print('index failure...???', holdI)
+            print(possible)
             return
         # print(possible)
         # print(NSIndx)
@@ -122,7 +123,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         ang_dist = np.sqrt(glat**2 + glong**2)
         fovS = fov_suppression(ang_dist, axM, dsize=15)
         rate *= fovS
-        
+        print('Rate/RateT', rate / sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5))
         #print(rate, sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5))
         glim = np.sqrt(sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5)  / rate) * 1e-12 # GeV^-1
         glist[indx].append(glim)
