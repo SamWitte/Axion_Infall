@@ -60,7 +60,7 @@ def Stripped_Files_For_RT(fileN, num_ns):
         
         
         
-        if np.sqrt(glt**2 + glg**2) > fwhm_radio(AxionMass[0]]):
+        if np.sqrt(glt**2 + glg**2) > fwhm_radio(AxionMass[0]):
             continue
     
         for j in range(len(AxionMass)):
