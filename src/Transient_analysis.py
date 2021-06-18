@@ -24,7 +24,7 @@ def fov_suppression(ang_dist, mass_a, dsize=15):
     suppress_F = np.exp(- ang_dist**2 / (2 * Sense_StdDev**2)) / (Sense_StdDev * np.sqrt(2*np.pi))
     return suppress_F
 
-def sense_compute(mass, bwidth=2e-5, t_obs=1, SNR=5):
+def sense_compute(mass, bwidth=1e-4, t_obs=1, SNR=5):
     # t_obs days, bwidth fractional
     SEFD = 0.098*1e3 #mJy
     return SNR * SEFD / np.sqrt(2 * mass * bwidth * t_obs * 24 * 60**2 / 6.58e-16)
@@ -68,7 +68,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         B0 = float(files[i][find1+len('_B0_'):find2])
         
         possible = np.where(np.round(orig_F[:, 6] / periodN, 3) == 1)[0]
-        holdI = np.where(np.round(orig_F[:,7][possible] / B0, 2) == 1)[0]
+        holdI = np.where(np.round(orig_F[:,7][possible] / B0, 3) == 1)[0]
         if len(holdI) != 0:
             NSIndx = possible[holdI]
         else:
@@ -101,7 +101,10 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         rel_rows = file_in[pixel_indices == viewA]
         if len(rel_rows[:,0]) == 0 or np.sum(rel_rows[:, 5]) == 0:
             continue
-        peakF = rel_rows[np.argmax(rel_rows[:, 5]), 6]
+        
+        bins = np.linspace(np.min(rel_rows[:,6]), np.max(rel_rows[:,6]), 60)
+        vals, bbs = np.histogram(rel_rows[:,6], bins=bins, weights=rel_rows[:,5])
+        peakF = (bbs[np.argmax(vals)] + bbs[np.argmax(vals)+1]) / 2
         rel_rows2 = rel_rows[np.abs(peakF - rel_rows[:,6]) <= (bwidth / 2)]
         rate_TEST = np.sum(rel_rows[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
         rate = np.sum(rel_rows2[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
