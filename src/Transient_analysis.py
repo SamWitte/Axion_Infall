@@ -146,7 +146,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
             fileN += "NFW_"
         else:
             fileN += "PL_"
-        fileN += "AxionMass_{:.2e}_Bwdith_{:.2e}_Tbin_{:.3f}_days_".format(AxionMass[i])
+        fileN += "AxionMass_{:.2e}_Bwdith_{:.2e}_Tbin_{:.3f}_days_".format(AxionMass[i], bwidth, t_obs)
         fileN += ".dat"
         np.savetxt(fileN, glist[i])
         
