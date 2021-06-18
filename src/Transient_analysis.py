@@ -18,7 +18,7 @@ def fwhm_radio(mass_a, dsize=15):
     fwhm = 0.7 * (1 / freq) * (15 / Dsize)
     return fwhm
     
-def fov_suppression(ang_dist, mass_a, dsize=15)
+def fov_suppression(ang_dist, mass_a, dsize=15):
     FWHM = fwhm_radio(mass_a, dsize=dsize)
     Sense_StdDev = FWHM / 2.355
     suppress_F = np.exp(- ang_dist**2 / (2 * Sense_StdDev**2)) / (Sense_StdDev * np.sqrt(2*np.pi))
