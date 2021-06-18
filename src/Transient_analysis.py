@@ -68,12 +68,13 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         B0 = float(files[i][find1+len('_B0_'):find2])
         
         possible = np.where(np.round(orig_F[:, 6] / periodN, 3) == 1)[0]
-        holdI = np.where(np.round(orig_F[:,7][possible] / B0, 3) == 1)[0]
+        holdI = np.where(np.round(orig_F[:,7][possible] / B0, 2) == 1)[0]
         if len(holdI) == 0:
             NSIndx = holdI
         else:
             print('index failure...???', holdI)
             print(possible)
+            print(periodN, B0, orig_F[:, 6][possible], orig_F[:, 7][possible], np.round(orig_F[:,7][possible] / B0, 2))
             return
         # print(possible)
         # print(NSIndx)
@@ -104,7 +105,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         rel_rows2 = rel_rows[np.abs(peakF - rel_rows[:,6]) <= (bwidth / 2)]
         rate_TEST = np.sum(rel_rows[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
         rate = np.sum(rel_rows2[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
-        print('Rate ratio: ', rate/rate_TEST)
+        print('Rate ratio: ', rate/rate_TEST, 'min max width...', np.max(np.abs(peakF - rel_rows[:,6]) ), np.min(np.abs(peakF - rel_rows[:,6]) ))
         
         t_shift = t_obs / 2.0 * 24.0 * 60.0**2 # seconds
         t_mid = Transient_Time(bparam, rad_amc, vel) / 2
