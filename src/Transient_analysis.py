@@ -69,12 +69,12 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         
         possible = np.where(np.round(orig_F[:, 6] / periodN, 3) == 1)[0]
         holdI = np.where(np.round(orig_F[:,7][possible] / B0, 2) == 1)[0]
-        if len(holdI) == 0:
-            NSIndx = holdI
+        if len(holdI) != 0:
+            NSIndx = possible[holdI]
         else:
             print('index failure...???', holdI)
             print(possible)
-            print(periodN, B0, orig_F[:, 6][possible], orig_F[:, 7][possible], '{:.4f}'.format(np.round(orig_F[:,7][possible] / B0, 2)))
+            print(periodN, B0, orig_F[:, 6][possible], orig_F[:, 7][possible], np.round(orig_F[:,7][possible] / B0, 2))
             return
         # print(possible)
         # print(NSIndx)
