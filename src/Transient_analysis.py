@@ -24,12 +24,12 @@ def fov_suppression(ang_dist, mass_a, dsize=15)
     suppress_F = np.exp(- ang_dist**2 / (2 * Sense_StdDev**2)) / (Sense_StdDev * np.sqrt(2*np.pi))
     return suppress_F
 
-def sense_compute(mass, bwidth=1e-5, t_obs=1, SNR=5):
+def sense_compute(mass, bwidth=2e-5, t_obs=1, SNR=5):
     # t_obs days, bwidth fractional
     SEFD = 0.098*1e3 #mJy
     return SNR * SEFD / np.sqrt(2 * mass * bwidth * t_obs * 24 * 60**2 / 6.58e-16)
     
-def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=1e-5):
+def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
     # t_obs in days
 
     if NFW:
@@ -94,7 +94,11 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=1e-5):
         rel_rows = file_in[pixel_indices == viewA]
         if len(rel_rows[:,0]) == 0 or np.sum(rel_rows[:, 5]) == 0:
             continue
-        rate = np.sum(rel_rows[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
+        peakF = rel_rows[np.argmax(rel_rows[:, 5]), 6]
+        rel_rows2 = rel_rows[np.abs(peakF - rel_rows[:,6]) <= (bwidth / 2)]
+        rate_TEST = np.sum(rel_rows[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
+        rate = np.sum(rel_rows2[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
+        print('Rate ratio: ', rate/rate_TEST)
         
         t_shift = t_obs / 2.0 * 24.0 * 60.0**2 # seconds
         t_mid = Transient_Time(bparam, rad_amc, vel) / 2
