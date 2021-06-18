@@ -5,6 +5,12 @@ import numpy as np
 fileN = '../encounter_data/Interaction_params_PL_AScut_wStripping.txt'
 Nruns = 1000
 
+def fwhm_radio(mass_a, Dsize=15):
+    #dsize m, for ska mid, 35 ska low
+    freq = mass_a / (2*np.pi) / 6.58e-16 / 1e9 # GHz
+    fwhm = 0.7 * (1 / freq) * (15 / Dsize)
+    return fwhm
+
 def Stripped_Files_For_RT(fileN, num_ns):
     loadF = np.loadtxt(fileN)
     if len(loadF[:,0]) > num_ns:
@@ -54,7 +60,7 @@ def Stripped_Files_For_RT(fileN, num_ns):
         
         
         
-        if np.sqrt(glt**2 + glg**2) > 1:
+        if np.sqrt(glt**2 + glg**2) > fwhm_radio(AxionMass[0]]):
             continue
     
         for j in range(len(AxionMass)):

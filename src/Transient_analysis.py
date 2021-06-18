@@ -12,12 +12,24 @@ t_obs = 1.0
 
 # run through each mass and each NS, determine coupling for which this would be observable
 
-def sense_compute(mass, bwidth=1e-4, t_obs=1, SNR=5):
+def fwhm_radio(mass_a, dsize=15):
+    Dsize = 15 # m, for ska mid, 35 ska low
+    freq = mass_a / (2*np.pi) / 6.58e-16 / 1e9 # GHz
+    fwhm = 0.7 * (1 / freq) * (15 / Dsize)
+    return fwhm
+    
+def fov_suppression(ang_dist, mass_a, dsize=15)
+    FWHM = fwhm_radio(mass_a, dsize=dsize)
+    Sense_StdDev = FWHM / 2.355
+    suppress_F = np.exp(- ang_dist**2 / (2 * Sense_StdDev**2)) / (Sense_StdDev * np.sqrt(2*np.pi))
+    return suppress_F
+
+def sense_compute(mass, bwidth=1e-5, t_obs=1, SNR=5):
     # t_obs days, bwidth fractional
     SEFD = 0.098*1e3 #mJy
     return SNR * SEFD / np.sqrt(2 * mass * bwidth * t_obs * 24 * 60**2 / 6.58e-16)
     
-def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=1e-4):
+def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=1e-5):
     # t_obs in days
 
     if NFW:
@@ -95,7 +107,14 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=1e-4):
         rate *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (2*t_shift)  / (dist * 3.086*10**18)**2 * 1.6022e-12 # erg / s / cm^2
         bw_norm = axM * bwidth / 6.58e-16 # Hz
         rate *= (1.0/bw_norm) * 1e26 # mJy
-        print(rate, sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5))
+        
+        glong = orig_F[NSIndx, 1]
+        glat = orig_F[NSIndx, 2]
+        ang_dist = np.sqrt(glat**2 + glong**2)
+        fovS = fov_suppression(ang_dist, axM, dsize=15)
+        rate *= fovS
+        
+        #print(rate, sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5))
         glim = np.sqrt(sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5)  / rate) * 1e-12 # GeV^-1
         glist[indx].append(glim)
 
