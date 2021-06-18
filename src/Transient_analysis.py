@@ -68,7 +68,12 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         B0 = float(files[i][find1+len('_B0_'):find2])
         
         possible = np.where(np.round(orig_F[:, 6], 3) == round(periodN, 3))[0]
-        NSIndx = np.where(np.round(orig_F[:,7][possible] / B0, 3) == 1)[0]
+        holdI = np.where(np.round(orig_F[:,7][possible] / B0, 3) == 1)
+        if len(holdI) == 1:
+            NSIndx = holdI[0]
+        else:
+            print('too many indicies???', holdI)
+            return
         # print(possible)
         # print(NSIndx)
         # print(B0, periodN)
