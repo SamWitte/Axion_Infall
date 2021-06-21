@@ -60,25 +60,32 @@ def Stripped_Files_For_RT(fileN, num_ns):
         
     
         for j in range(len(AxionMass)):
-            if np.sqrt(glt**2 + glg**2) > fwhm_radio(AxionMass[j]):
+            if np.sqrt(glt**2 + glg**2) > 6 * fwhm_radio(AxionMass[j]):
                 continue
+                
             thetV = np.arccos(1.0 - 2.0 * np.random.rand())
             cmd = 'julia Transient_runner.jl ' +\
-                    '--B0 {:.3e} --P {:.4f} --ThetaM {:.3f} --mass {:.3e} --vel {:.4e} --thetaV {:.4f} --velDisp {:.3e} \n '.format(B0, Period, ThetaM, AxionMass[j], velnorm, thetV, velDisp[i])
+                    '--B0 {:.3e} --P {:.4f} --ThetaM {:.3f} --mass {:.3e} --vel {:.4e} --thetaV {:.4f} --velDisp {:.3e}  & \n'.format(B0, Period, ThetaM, AxionMass[j], velnorm, thetV, velDisp[i])
                     
             cmds.append(cmd)
 
     for i in range(batches):
         fout=open(script_dir+'/Anteater_commands_{:d}.sh'.format(cnt), 'w+')
         fout.write('#! /bin/bash\n')
-        fout.write('#SBATCH --time=40:00:00\n')
+        fout.write('#SBATCH --time=50:00:00\n')
         fout.write('#SBATCH --mem=20G\n')
         fout.write('#SBATCH --nodes=1\n')
-        fout.write('#SBATCH --cpus-per-task=1\n')
-        fout.write('#SBATCH --ntasks=1\n')
+#        fout.write('#SBATCH --cpus-per-task=1\n')
+#        fout.write('#SBATCH --ntasks=1\n')
         fout.write('cd ../ \n')
+        cnt_wait = 0
         for cmd in cmds[i::batches]:
             fout.write('{}'.format(cmd))
+            cnt_wait += 1
+            if cnt_wait > 8:
+                fout.write('wait \n')
+                cnt_wait = 0
+        fout.write('wait \n')
         fout.close()
         cnt +=1
     
