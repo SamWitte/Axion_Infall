@@ -65,7 +65,7 @@ def Stripped_Files_For_RT(fileN, num_ns):
                 
             thetV = np.arccos(1.0 - 2.0 * np.random.rand())
             cmd = 'julia Transient_runner.jl ' +\
-                    '--B0 {:.3e} --P {:.4f} --ThetaM {:.3f} --mass {:.3e} --vel {:.4e} --thetaV {:.4f} --velDisp {:.3e}  & \n'.format(B0, Period, ThetaM, AxionMass[j], velnorm, thetV, velDisp[i])
+                    '--B0 {:.6e} --P {:.6f} --ThetaM {:.3f} --mass {:.3e} --vel {:.4e} --thetaV {:.4f} --velDisp {:.3e}  & \n'.format(B0, Period, ThetaM, AxionMass[j], velnorm, thetV, velDisp[i])
                     
             cmds.append(cmd)
 
@@ -78,6 +78,8 @@ def Stripped_Files_For_RT(fileN, num_ns):
 #        fout.write('#SBATCH --cpus-per-task=1\n')
 #        fout.write('#SBATCH --ntasks=1\n')
         fout.write('cd ../ \n')
+        fout.write('mkdir "$TMPDIR"/work')
+        
         cnt_wait = 0
         for cmd in cmds[i::batches]:
             fout.write('{}'.format(cmd))
