@@ -650,7 +650,7 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; n
     dkdl = RT.dk_dl(SurfaceX[1:(cnt-1),:], SurfaceV[1:(cnt-1),:], [RT.ωNR_e, MagnetoVars]) ./ 6.58e-16;
     ctheta = RT.Get_Normal_CosTheta(SurfaceX[1:(cnt-1),:], SurfaceV[1:(cnt-1),:], Mass_a, t_in, θm, ωPul, B0, rNS)
     if sve
-        dirN = "scratch/work/"
+        dirN = "/scratch/work/"
         fileTail = "PhaseSpace_Map_AxionM_"*string(Mass_a)*"_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileTail *= "Time_"*string(t_in)*"_sec_"
         
@@ -717,7 +717,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
     dϕ = ϕL[2] - ϕL[1];
     
     
-    dirN = "scratch/work/"
+    dirN = "/scratch/work/"
 
     for i in 1:length(t_list)
         t_in = t_list[i]
@@ -810,7 +810,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
             SaveAll[:, 6] .*= ctheta[:];
         end
             
-        fileN = "scratch/work/Minicluster_Time_"*string(t_list[i])*"_MassAx_"*string(Mass_a);
+        fileN = "/scratch/work/Minicluster_Time_"*string(t_list[i])*"_MassAx_"*string(Mass_a);
         fileN *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileN *= string(rNS)*"_MassNS_"*string(Mass_NS);
         
@@ -886,7 +886,7 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
     for i in 1:length(t_list)
         t_in = t_list[i]
         
-        fileN = "scratch/work/Minicluster_Time_"*string(t_list[i])*"_MassAx_"*string(Mass_a);
+        fileN = "/scratch/work/Minicluster_Time_"*string(t_list[i])*"_MassAx_"*string(Mass_a);
         fileN *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileN *= string(rNS)*"_MassNS_"*string(Mass_NS);
         
