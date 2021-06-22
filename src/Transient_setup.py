@@ -78,7 +78,7 @@ def Stripped_Files_For_RT(fileN, num_ns):
 #        fout.write('#SBATCH --cpus-per-task=1\n')
 #        fout.write('#SBATCH --ntasks=1\n')
         fout.write('cd ../ \n')
-        fout.write('mkdir "$TMPDIR"/work')
+        fout.write('mkdir "$TMPDIR"/work \n')
         
         cnt_wait = 0
         for cmd in cmds[i::batches]:
