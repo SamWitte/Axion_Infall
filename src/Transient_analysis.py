@@ -132,7 +132,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         rate *= fovS
         
         if rate == 0:
-            print(rel_rows[:, 5])
+            print(rel_rows[:, 5], fovS, np.sum(dense_scan.flatten()))
             continue
         #print(rate, sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5))
         glim = np.sqrt(sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5)  / rate) * 1e-12 # GeV^-1
