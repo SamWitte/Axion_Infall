@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.interpolate import interp1d
-from scipy.integrate import quad
+from scipy.integrate import quad, dblquad
 from AMC_Density_Evolution import *
 import glob
 import healpy as hp
