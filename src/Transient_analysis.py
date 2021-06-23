@@ -21,24 +21,24 @@ def tele_details(tele_name):
         dsize = 15
         ndish = 2000
         T_rec = 20
-        eta_col = 0.8
+        eta_coll = 0.8
         fname = '_SKA_Mid_'
     elif tele_name == 'SKA-Low':
         dsize = 35
         ndish = 911
         T_rec = 40
-        eta = 0.8
+        eta_coll = 0.8
         fname = '_SKA_Low_'
     elif tele_name == 'Hirax':
         dsize = 6
         T_rec = 50
         ndish = 1024
-        eta = 0.6
+        eta_coll = 0.6
         fname = '_Hirax_'
     else:
         print('Telescope not included...')
         return
-    return dsize, ndish, T_rec, eta_col, fname
+    return dsize, ndish, T_rec, eta_coll, fname
 
 
 def fwhm_radio(mass_a, dsize=15):
@@ -76,7 +76,7 @@ def SEFD_tele(mass, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8):
     return SEFD
     
 
-def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=2000, T_rec=20, eta_col=0.8, tele_tag=''):
+def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8, tele_tag=''):
     # t_obs in days
 
     if NFW:
@@ -202,5 +202,5 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=200
         
     return
 
-dsize, ndish, T_rec, eta_col, tele_tag = tele_details(tele_name)
-Find_Ftransient(NFW=NFW, nside=nside, bwidth=bwidth, t_obs=t_obs, dsize=dsize, ndish=ndish, T_rec=T_rec, eta_col=eta_col, tele_tag=tele_tag)
+dsize, ndish, T_rec, eta_coll, tele_tag = tele_details(tele_name)
+Find_Ftransient(NFW=NFW, nside=nside, bwidth=bwidth, t_obs=t_obs, dsize=dsize, ndish=ndish, T_rec=T_rec, eta_coll=eta_coll, tele_tag=tele_tag)
