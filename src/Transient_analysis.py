@@ -76,7 +76,7 @@ def SEFD_tele(mass, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8):
     return SEFD
     
 
-def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8, tele_tag=''):
+def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=2000, T_rec=20, eta_col=0.8, tele_tag=''):
     # t_obs in days
 
     if NFW:
