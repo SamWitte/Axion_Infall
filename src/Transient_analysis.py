@@ -102,7 +102,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         if len(rel_rows[:,0]) == 0 or np.sum(rel_rows[:, 5]) == 0:
             continue
         
-        bins = np.linspace(np.min(rel_rows[:,6]) + bwidth/2, np.max(rel_rows[:,6]) - bwidth/2, 200)
+        bins = np.linspace(np.min(rel_rows[:,6]) + bwidth/2, np.max(rel_rows[:,6]) - bwidth/2, 500)
         rate_hold = np.zeros_like(bins)
         for kk in range(len(bins)):
             rate_hold[kk] = np.sum(rel_rows[np.abs(bins[kk] - rel_rows[:,6]) <= (bwidth / 2), 5]) / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
