@@ -120,10 +120,8 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         for j in range(len(tlist)):
             dense_scan[j] = Transient_AMC_DensityEval(bparam, rad_amc, dens_amc, vel, tlist[j], nfw=NFW)[0]
 
-        
-        rate *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (2*t_shift)  / (dist * 3.086*10**18)**2 * 1.6022e-12 # erg / s / cm^2
         bw_norm = axM * bwidth / 6.58e-16 # Hz
-        rate *= (1.0/bw_norm) * 1e26 # mJy
+        rate *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (2*t_shift)  / (dist * 3.086*10**18)**2 * 1.6022e-12 / bw_norm * 1e26 # mJy
         
         glong = orig_F[NSIndx, 1]
         glat = orig_F[NSIndx, 2]
@@ -132,7 +130,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         rate *= fovS
         
         if rate == 0:
-            print(rel_rows[:, 5], fovS, np.sum(dense_scan.flatten()),  np.trapz(dense_scan.flatten(), tlist.flatten()) / (2*t_shift)  / (dist * 3.086*10**18)**2 * 1.6022e-12, (1.0/bw_norm) * 1e26)
+            print(rel_rows[:, 5], fovS, rate)
             continue
         #print(rate, sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5))
         glim = np.sqrt(sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5)  / rate) * 1e-12 # GeV^-1
