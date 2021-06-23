@@ -19,13 +19,13 @@ haslam = hp.read_map('../haslam/haslam408_dsds_Remazeilles2014.fits')
 def tele_details(tele_name):
     if tele_name == 'SKA-Mid':
         dsize = 15
-        ndish = 2000
+        ndish = 5659
         T_rec = 20
         eta_coll = 0.8
         fname = '_SKA_Mid_'
     elif tele_name == 'SKA-Low':
         dsize = 35
-        ndish = 911
+        ndish = 1000
         T_rec = 40
         eta_coll = 0.8
         fname = '_SKA_Low_'
@@ -66,13 +66,14 @@ def sky_temp(mass, dsize=15):
     Tsky = dblquad(lambda x,y: hp.get_interp_val(haslam, np.pi/2 + x, y)*np.cos(x), -rad_ang, rad_ang, lambda x: -rad_ang, lambda x: rad_ang, epsabs=1e-4, epsrel=1e-4)[0] /  (2*rad_ang)**2
     # this is value at 408 MHz, we then scale with freq nu^-2.55
     freq = mass / (2*np.pi) / 6.58e-16 / 1e6 # MHz
-    return Tsky * (408 / freq)**-2.55 # K
+    return Tsky * (408 / freq)**2.55 # K
     
 def SEFD_tele(mass, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8):
     Aeff = np.pi * (dsize / 2)**2 * ndish * eta_coll * (1e2)**2 # cm ^2
     skyT = sky_temp(mass, dsize=dsize)
     T_tot = skyT + T_rec # K
     SEFD = 2 * T_tot / Aeff * 1.38e-16 / 1e-23 * 1e3 # mJy
+    print('Freq [GHz]: {:.2e}, Sky Temp [K]: {:.2e}, SEFD [Jy]: {:.2e}'.format(mass / (2*np.pi) / 6.58e-16 / 1e9, skyT, SEFD * 1e-3))
     return SEFD
     
 
