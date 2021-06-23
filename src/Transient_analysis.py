@@ -9,14 +9,43 @@ import os
 NFW = True
 nside = 8
 t_obs = 1.0
+tele_name = 'SKA-Mid' # SKA-Mid, SKA-Low, Hirax
 
 # run through each mass and each NS, determine coupling for which this would be observable
+
+haslam = hp.read_map('../haslam/haslam408_dsds_Remazeilles2014.fits')
+dsize, ndish, T_rec, eta_col, tele_tag = tele_details(tele_name)
+
+def tele_details(tele_name):
+    if tele_name == 'SKA-Mid':
+        dsize = 15
+        ndish = 2000
+        T_rec = 20
+        eta_col = 0.8
+        fname = '_SKA_Mid_'
+    elif tele_name == 'SKA-Low':
+        dsize = 35
+        ndish = 911
+        T_rec = 40
+        eta = 0.8
+        fname = '_SKA_Low_'
+    elif tele_name == 'Hirax':
+        dsize = 6
+        T_rec = 50
+        ndish = 1024
+        eta = 0.6
+        fname = '_Hirax_'
+    else:
+        print('Telescope not included...')
+        return
+    return dsize, ndish, T_rec, eta_col, fname
+
 
 def fwhm_radio(mass_a, dsize=15):
     Dsize = 15 # m, for ska mid, 35 ska low
     freq = mass_a / (2*np.pi) / 6.58e-16 / 1e9 # GHz
     fwhm = 0.7 * (1 / freq) * (15 / Dsize)
-    return fwhm
+    return fwhm # deg
     
 def fov_suppression(ang_dist, mass_a, dsize=15):
     FWHM = fwhm_radio(mass_a, dsize=dsize)
@@ -24,12 +53,30 @@ def fov_suppression(ang_dist, mass_a, dsize=15):
     suppress_F = np.exp(- ang_dist**2 / (2 * Sense_StdDev**2)) / (Sense_StdDev * np.sqrt(2*np.pi))
     return suppress_F
 
-def sense_compute(mass, bwidth=1e-3, t_obs=1, SNR=5):
+def sense_compute(mass, bwidth=1e-3, t_obs=1, SNR=5, SEFD=None):
     # t_obs days, bwidth fractional
-    SEFD = 0.098*1e3 #mJy
+    if SEFD is None:
+        SEFD = 0.098*1e3 #mJy
+    
     return SNR * SEFD / np.sqrt(2 * mass * bwidth * t_obs * 24 * 60**2 / 6.58e-16)
     
-def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
+def sky_temp(mass, dsize=15):
+    # sky temperatue
+    rad_ang = fwhm_radio(mass_a, dsize=15) / 2 * np.pi/180.0
+    Tsky = dblquad(lambda x,y: hp.get_interp_val(haslam, np.pi/2 + x, y)*np.cos(x), -thetaD, thetaD, lambda x: -thetaD, lambda x: thetaD, epsabs=1e-4, epsrel=1e-4)[0] /  (2*thetaD)**2
+    # this is value at 408 MHz, we then scale with freq nu^-2.55
+    freq = mass_a / (2*np.pi) / 6.58e-16 / 1e6 # MHz
+    return Tsky * (408 / freq)**-2.55 # K
+    
+def SEFD_tele(mass, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8):
+    Aeff = np.pi * (dsize / 2)**2 * ndish * eta_coll * (1e2)**2 # cm ^2
+    skyT = sky_temp(mass, dsize=dsize)
+    T_tot = skyT + T_rec # K
+    SEFD = 2 * T_tot / Aeff * 1.38e-16 / 1e-23 * 1e3 # mJy
+    return SEFD
+    
+
+def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8, tele_tag=''):
     # t_obs in days
 
     if NFW:
@@ -39,8 +86,10 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         
     AxionMass = [1.0e-6, 5.0e-6, 1.0e-5, 3.0e-5] # eV
     glist = np.zeros(len(AxionMass), dtype=object)
+    sefd_list = np.zeros(len(AxionMass))
     for i in range(len(AxionMass)):
         glist[i] = []
+        sefd_list[i] = SEFD_tele(AxionMass[i], dsize=dsize, ndish=ndish, T_rec=T_rec, eta_coll=eta_coll)
         
     files = glob.glob('results/Minicluster_PeriodAvg*')
     # cycle through output files
@@ -135,13 +184,14 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
             print(rel_rows[:, 5], fovS, rate, rate_hold)
             continue
         #print(rate, sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5))
-        glim = np.sqrt(sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5)  / rate) * 1e-12 # GeV^-1
+        glim = np.sqrt(sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5, SEFD=sefd_list[indx])  / rate) * 1e-12 # GeV^-1
         glist[indx].append(glim)
 
     if not os.path.isdir("amc_glims"):
         os.mkdir("amc_glims")
     for i in range(len(AxionMass)):
         fileN = "amc_glims/glim_"
+        fileN += tele_tag + "_"
         if NFW:
             fileN += "NFW_"
         else:
@@ -152,4 +202,5 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5):
         
     return
 
-Find_Ftransient(NFW=NFW, nside=nside, t_obs=t_obs)
+
+Find_Ftransient(NFW=NFW, nside=nside, t_obs=t_obs, dsize=dsize, ndish=ndish, T_rec=T_rec, eta_col=eta_col, tele_tag=tele_tag)
