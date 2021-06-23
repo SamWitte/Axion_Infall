@@ -9,12 +9,12 @@ import os
 NFW = True
 nside = 8
 t_obs = 1.0
+bwidth = 1e-5
 tele_name = 'SKA-Mid' # SKA-Mid, SKA-Low, Hirax
 
 # run through each mass and each NS, determine coupling for which this would be observable
 
 haslam = hp.read_map('../haslam/haslam408_dsds_Remazeilles2014.fits')
-dsize, ndish, T_rec, eta_col, tele_tag = tele_details(tele_name)
 
 def tele_details(tele_name):
     if tele_name == 'SKA-Mid':
@@ -202,5 +202,5 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=200
         
     return
 
-
-Find_Ftransient(NFW=NFW, nside=nside, t_obs=t_obs, dsize=dsize, ndish=ndish, T_rec=T_rec, eta_col=eta_col, tele_tag=tele_tag)
+dsize, ndish, T_rec, eta_col, tele_tag = tele_details(tele_name)
+Find_Ftransient(NFW=NFW, nside=nside, bwidth=bwidth, t_obs=t_obs, dsize=dsize, ndish=ndish, T_rec=T_rec, eta_col=eta_col, tele_tag=tele_tag)
