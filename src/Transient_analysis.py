@@ -62,7 +62,7 @@ def sense_compute(mass, bwidth=1e-3, t_obs=1, SNR=5, SEFD=None):
     
 def sky_temp(mass, dsize=15):
     # sky temperatue
-    rad_ang = fwhm_radio(mass_a, dsize=15) / 2 * np.pi/180.0
+    rad_ang = fwhm_radio(mass, dsize=15) / 2 * np.pi/180.0
     Tsky = dblquad(lambda x,y: hp.get_interp_val(haslam, np.pi/2 + x, y)*np.cos(x), -thetaD, thetaD, lambda x: -thetaD, lambda x: thetaD, epsabs=1e-4, epsrel=1e-4)[0] /  (2*thetaD)**2
     # this is value at 408 MHz, we then scale with freq nu^-2.55
     freq = mass_a / (2*np.pi) / 6.58e-16 / 1e6 # MHz
