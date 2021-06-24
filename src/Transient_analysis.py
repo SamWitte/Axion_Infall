@@ -41,10 +41,9 @@ def tele_details(tele_name):
     return dsize, ndish, T_rec, eta_coll, fname
 
 
-def fwhm_radio(mass_a, dsize=15):
-    Dsize = 15 # m, for ska mid, 35 ska low
+def fwhm_radio(mass_a, dsize=15): # dsize in m
     freq = mass_a / (2*np.pi) / 6.58e-16 / 1e9 # GHz
-    fwhm = 0.7 * (1 / freq) * (15 / Dsize)
+    fwhm = 0.7 * (1 / freq) * (15 / dsize)
     return fwhm # deg
     
 def fov_suppression(ang_dist, mass_a, dsize=15):
