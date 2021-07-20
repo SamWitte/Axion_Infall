@@ -8,9 +8,10 @@ import os
 
 NFW = True
 nside = 8
-t_obs = 1.0
-bwidth = 1e-5
-tele_name = 'SKA-Mid' # SKA-Mid, SKA-Low, Hirax
+t_obs = 1.0 # days
+bwidth = 5e-6
+tele_name = 'SKA-Mid' # SKA-Mid, SKA-Low, Hirax, GBT
+ax_mass = 1e-5 # eV
 
 # run through each mass and each NS, determine coupling for which this would be observable
 
@@ -35,6 +36,13 @@ def tele_details(tele_name):
         ndish = 1024
         eta_coll = 0.6
         fname = '_Hirax_'
+        
+    elif tele_name == 'GBT':
+        dsize = 100
+        T_rec = 20
+        ndish = 1
+        eta_coll = 0.7
+        fname = '_GBT_'
     else:
         print('Telescope not included...')
         return
@@ -65,7 +73,7 @@ def sky_temp(mass, dsize=15):
     Tsky = dblquad(lambda x,y: hp.get_interp_val(haslam, np.pi/2 + x, y)*np.cos(x), -rad_ang, rad_ang, lambda x: -rad_ang, lambda x: rad_ang, epsabs=1e-4, epsrel=1e-4)[0] /  (2*rad_ang)**2
     # this is value at 408 MHz, we then scale with freq nu^-2.55
     freq = mass / (2*np.pi) / 6.58e-16 / 1e6 # MHz
-    return Tsky * (408 / freq)**2.55 # K
+    return Tsky * (408.0 / freq)**2.55 # K
     
 def SEFD_tele(mass, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8):
     Aeff = np.pi * (dsize / 2)**2 * ndish * eta_coll * (1e2)**2 # cm ^2
@@ -76,7 +84,7 @@ def SEFD_tele(mass, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8):
     return SEFD
     
 
-def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8, tele_tag=''):
+def Find_Ftransient(NFW=True, mass=1e-5, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8, tele_tag=''):
     # t_obs in days
 
     if NFW:
@@ -84,7 +92,7 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=200
     else:
         orig_F = np.loadtxt('../encounter_data/Interaction_params_PL_AScut_wStripping.txt')
         
-    AxionMass = [1.0e-6, 5.0e-6, 1.0e-5, 3.0e-5] # eV
+    AxionMass = [mass] # eV
     glist = np.zeros(len(AxionMass), dtype=object)
     sefd_list = np.zeros(len(AxionMass))
     for i in range(len(AxionMass)):
@@ -203,4 +211,4 @@ def Find_Ftransient(NFW=True, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=200
     return
 
 dsize, ndish, T_rec, eta_coll, tele_tag = tele_details(tele_name)
-Find_Ftransient(NFW=NFW, nside=nside, bwidth=bwidth, t_obs=t_obs, dsize=dsize, ndish=ndish, T_rec=T_rec, eta_coll=eta_coll, tele_tag=tele_tag)
+Find_Ftransient(NFW=NFW, mass=ax_mass, nside=nside, bwidth=bwidth, t_obs=t_obs, dsize=dsize, ndish=ndish, T_rec=T_rec, eta_coll=eta_coll, tele_tag=tele_tag)
