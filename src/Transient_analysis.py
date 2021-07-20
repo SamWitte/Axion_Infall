@@ -196,7 +196,7 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
         #print(rate, sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5))
         glim = np.sqrt(sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5, SEFD=sefd_list[indx])  / rate) * 1e-12 # GeV^-1
         if glim == 0 or np.isnan(glim):
-            print(hp.pix2ang(nside, viewA), rel_rows[:,5])
+            print('Here...', hp.pix2ang(nside, viewA), dense_scan.flatten(), rate)
         glist[indx].append(glim)
 
     if not os.path.isdir("amc_glims"):
