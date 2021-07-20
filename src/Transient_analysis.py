@@ -161,16 +161,16 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
         
         b_low = np.percentile(rel_rows[:,6], 10)
         b_high = np.percentile(rel_rows[:,6], 90)
-        bins = np.linspace(b_low, b_high, 500)
+        bins = np.linspace(b_low, b_high, 5000)
         rate_hold = np.zeros_like(bins)
         for kk in range(len(bins)):
             rate_hold[kk] = np.sum(rel_rows[np.abs(bins[kk] - rel_rows[:,6]) <= (bwidth / 2), 5]) / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
         peakF = bins[np.argmax(rate_hold)]
         rate = rate_hold[np.argmax(rate_hold)]
         # rel_rows2 = rel_rows[np.abs(peakF - rel_rows[:,6]) <= (bwidth / 2)]
-        rate_TEST = np.sum(rel_rows[:, 5])  /hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
+        rate_TEST = np.sum(rel_rows[:, 5])  / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
         
-        print('Rate ratio: ', rate/rate_TEST, 'max width...', np.max(np.abs(peakF - rel_rows[:,6]) ), '90 percent', np.percentile(np.abs(peakF - rel_rows[:,6]), 90))
+        # print('Rate ratio: ', rate/rate_TEST, 'max width...', np.max(np.abs(peakF - rel_rows[:,6]) ), '90 percent', np.percentile(np.abs(peakF - rel_rows[:,6]), 90))
         
         t_shift = t_obs / 2.0 * 24.0 * 60.0**2 # seconds
         t_mid = Transient_Time(bparam, rad_amc, vel) / 2
@@ -195,6 +195,8 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
             continue
         #print(rate, sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5))
         glim = np.sqrt(sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5, SEFD=sefd_list[indx])  / rate) * 1e-12 # GeV^-1
+        if glim == 0 or np.isnan(glim):
+            print(hp.pix2ang(nside, viewA), rel_rows[:,5])
         glist[indx].append(glim)
 
     if not os.path.isdir("amc_glims"):
