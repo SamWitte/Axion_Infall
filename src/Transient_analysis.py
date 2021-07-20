@@ -13,6 +13,7 @@ bwidth = 5e-6
 tele_name = 'SKA-Mid' # SKA-Mid, SKA-Low, Hirax, GBT
 ax_mass = 1e-5 # eV
 NS_filename = 'Interaction_params_NFW_AScut_wStripping.txt'
+fov_hit = False # apply FoV suppression of rate...
 
 # run through each mass and each NS, determine coupling for which this would be observable
 
@@ -85,7 +86,7 @@ def SEFD_tele(mass, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8):
     return SEFD
     
 
-def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8, tele_tag=''):
+def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8, tele_tag='', fov_hit=True):
     # t_obs in days
 
     
@@ -185,7 +186,9 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
         glat = orig_F[NSIndx, 2]
         ang_dist = np.sqrt(glat**2 + glong**2)
         fovS = fov_suppression(ang_dist, axM, dsize=15)
-        rate *= fovS
+        if fov_hit:
+            rate *= fovS
+            
         
         if rate == 0:
             print(rel_rows[:, 5], fovS, rate, rate_hold)
@@ -210,4 +213,4 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
     return
 
 dsize, ndish, T_rec, eta_coll, tele_tag = tele_details(tele_name)
-Find_Ftransient(NFW=NFW, NS_filename=NS_filename, mass=ax_mass, nside=nside, bwidth=bwidth, t_obs=t_obs, dsize=dsize, ndish=ndish, T_rec=T_rec, eta_coll=eta_coll, tele_tag=tele_tag)
+Find_Ftransient(NFW=NFW, NS_filename=NS_filename, mass=ax_mass, nside=nside, bwidth=bwidth, t_obs=t_obs, dsize=dsize, ndish=ndish, T_rec=T_rec, eta_coll=eta_coll, tele_tag=tele_tag, fov_hit=fov_hit)
