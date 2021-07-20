@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.integrate import quad, dblquad
@@ -5,6 +6,7 @@ from AMC_Density_Evolution import *
 import glob
 import healpy as hp
 import os
+
 
 NFW = True
 nside = 8
@@ -178,7 +180,9 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
         dense_scan = np.zeros_like(tlist)
         for j in range(len(tlist)):
             dense_scan[j] = Transient_AMC_DensityEval(bparam, rad_amc, dens_amc, vel, tlist[j], nfw=NFW)[0]
-
+            if math.isinf(dense_scan[j]):
+                print('Check inf...', bparam, rad_amc, dens_amc, vel, tlist[j])
+                
         bw_norm = axM * bwidth / 6.58e-16 # Hz
         rate *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (2*t_shift)  / (dist * 3.086*10**18)**2 * 1.6022e-12 / bw_norm * 1e26 # mJy
         
@@ -196,7 +200,7 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
         #print(rate, sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5))
         glim = np.sqrt(sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5, SEFD=sefd_list[indx])  / rate) * 1e-12 # GeV^-1
         if glim == 0 or np.isnan(glim):
-            print('Here...', hp.pix2ang(nside, viewA), dense_scan.flatten(), rate)
+            print('Here...', hp.pix2ang(nside, viewA), dense_scan.flatten(), )
         glist[indx].append(glim)
 
     if not os.path.isdir("amc_glims"):
