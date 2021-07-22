@@ -47,6 +47,7 @@ def Stripped_Files_For_RT(fileN, num_ns):
     batches = 10
     
     AxionMass = [1e-6, 5e-6, 1e-5, 3e-5] # eV
+    
     check = []
     cmds = []
     
@@ -58,7 +59,7 @@ def Stripped_Files_For_RT(fileN, num_ns):
         glt = glat[i]
         velnorm = velM[i]
         
-    
+        
         for j in range(len(AxionMass)):
             if np.sqrt(glt**2 + glg**2) > 6 * fwhm_radio(AxionMass[j]):
                 continue

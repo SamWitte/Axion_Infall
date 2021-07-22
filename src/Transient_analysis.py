@@ -6,17 +6,22 @@ from AMC_Density_Evolution import *
 import glob
 import healpy as hp
 import os
+from scipy.stats import poisson
 
 
 NFW = True
 nside = 8
 t_obs = 1.0 # days
 bwidth = 5e-6
-tele_name = 'SKA-Mid' # SKA-Mid, SKA-Low, Hirax, GBT
-ax_mass = 1e-5 # eV
-NS_filename = 'Interaction_params_NFW_AScut_wStripping.txt'
+tele_name = 'GBT' # SKA-Mid, SKA-Low, Hirax, GBT
+ax_mass = 5.7e-5 # eV
+NS_filename = 'Interaction_params_SJW_PL_AScut_ma_57mueV_delta_a.txt'
 fov_hit = False # apply FoV suppression of rate...
 fileTag = '_'
+
+Time_int = 10 # time interval [days]
+enc_rate = 1 # events / day
+n_realize = 5 # number of realizations
 
 # run through each mass and each NS, determine coupling for which this would be observable
 
@@ -70,7 +75,7 @@ def sense_compute(mass, bwidth=1e-3, t_obs=1, SNR=5, SEFD=None):
     if SEFD is None:
         SEFD = 0.098*1e3 #mJy
     
-    return SNR * SEFD / np.sqrt(2 * mass * bwidth * t_obs * 24 * 60**2 / 6.58e-16)
+    return SNR * SEFD / np.sqrt(2 * mass * bwidth / (2*np.pi) * t_obs * 24 * 60**2 / 6.58e-16)
     
 def sky_temp(mass, dsize=15):
     # sky temperatue
@@ -87,6 +92,146 @@ def SEFD_tele(mass, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8):
     SEFD = 2 * T_tot / Aeff * 1.38e-16 / 1e-23 * 1e3 # mJy
     print('Freq [GHz]: {:.2e}, Sky Temp [K]: {:.2e}, SEFD [Jy]: {:.2e}'.format(mass / (2*np.pi) / 6.58e-16 / 1e9, skyT, SEFD * 1e-3))
     return SEFD
+ 
+ 
+def Time_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8, tele_tag='', fov_hit=True, fileTag='', Time_int=365, enc_rate=1, n_realize=100):
+    # t_obs in days, Time_int [days], enc_rate [#/day]
+    if enc_rate**-1 > Time_int:
+        print('Encounter rate too small! Increase Time_int')
+        return
+    
+    t_bin_center = Time_int / 2
+
+    orig_F = np.loadtxt('../encounter_data/'+NS_filename)
+    sefd_list = SEFD_tele(mass, dsize=dsize, ndish=ndish, T_rec=T_rec, eta_coll=eta_coll)
+    
+    files = glob.glob('results/Minicluster_PeriodAvg*')
+    
+    avgN_events = (enc_rate * Time_int)
+    print('Avg number of events: {:.0f}'.format(avgN_events))
+    if avgN_events > len(files):
+        print('Not enough files generated, reduce Time_int')
+        return
+    
+    g_realize = np.zeros(n_realize)
+    n_cnt = 0
+    
+    
+    while n_cnt < n_realize:
+        Nevts = poisson.rvs(avgN_events)
+        NSs = np.asarray(files)[np.random.randint(0,high=len(files),size=Nevts)]
+        print('Realization {:.0f}, drawn events {:.0f}'.format(n_cnt, Nevts))
+        
+        rate = 0.0
+        # cycle through output files
+        for i in range(len(NSs)):
+            # identify NS in original file
+            find1 = files[i].find('_rotPulsar_')
+            find2 = files[i].find('_B0_')
+            periodN = (2 * np.pi) / float(files[i][find1+len('_rotPulsar_'):find2])
+            
+            find1 = files[i].find('_B0_')
+            find2 = files[i].find('_rNS_')
+            B0 = float(files[i][find1+len('_B0_'):find2])
+            
+            possible = np.where(np.round(orig_F[:, 6] / periodN, 3) == 1)[0]
+            holdI = np.where(np.round(orig_F[:,7][possible] / B0, 3) == 1)[0]
+            if len(holdI) != 0:
+                NSIndx = possible[holdI]
+            else:
+                print('index failure...???', holdI)
+                print(possible)
+                print(periodN, B0, orig_F[:, 6][possible], orig_F[:, 7][possible], np.round(orig_F[:,7][possible] / B0, 2))
+                return
+            
+            dist = orig_F[NSIndx, 0] # pc
+            dens_amc = orig_F[NSIndx, 3] # M/pc^3
+            rad_amc = orig_F[NSIndx, 4] # pc
+            bparam = orig_F[NSIndx, 5] # pc
+            vel = orig_F[NSIndx, -1] * 3.086*10**13 / 2.998e5 # unitless
+            dens_amc *= 3.8 * 10**10 # eV/cm^3
+            rad_amc *= 3.086*10**13 # km
+            bparam *= 3.086*10**13 # km
+        
+        
+            # compute flux density
+            file_in = np.load(files[i])
+            Theta = file_in[:,2]
+            Phi = file_in[:,3]
+            
+            pixel_indices = hp.ang2pix(nside, Theta, Phi)
+            indxs = hp.nside2npix(nside)
+            viewA = int(np.random.rand(1) * indxs)
+            rel_rows = file_in[pixel_indices == viewA]
+            if len(rel_rows[:,0]) == 0 or np.sum(rel_rows[:, 5]) == 0:
+                print('Rate is 0...', rel_rows[:, 5])
+                continue
+            
+            b_low = np.percentile(rel_rows[:,6], 10)
+            b_high = np.percentile(rel_rows[:,6], 90)
+            bins = np.linspace(b_low, b_high, 5000)
+            rate_hold = np.zeros_like(bins)
+            for kk in range(len(bins)):
+                rate_hold[kk] = np.sum(rel_rows[np.abs(bins[kk] - rel_rows[:,6]) <= (bwidth / 2), 5]) / hp.pixelfunc.nside2resol(nside) # missing rho [eV / cm^3], will be in [eV / s]
+            peakF = bins[np.argmax(rate_hold)]
+            rate_temp = rate_hold[np.argmax(rate_hold)]
+        
+            # time analysis....
+            # sample peak time
+            t_mid = Transient_Time(bparam, rad_amc, vel) / 2
+            peakT = np.random.rand() * Time_int
+            t0 = peakT - t_mid / (60**2 * 24) # days
+            t_min = t_bin_center - t_obs / 2
+            t_max = t_bin_center + t_obs / 2
+            
+            print(' \t Start time and peak time of event: {:.2f} and {:.2f}. Transit time: {:.2f}'.format(t0[0], peakT, t_mid[0] / (60**2 * 24) * 2))
+            tlist = np.linspace(t_min - t0, t_max - t0, 200) * (60**2 * 24)
+        
+        
+            dense_scan = np.zeros_like(tlist)
+            for j in range(len(tlist)):
+                dense_scan[j] = Transient_AMC_DensityEval(bparam, rad_amc, dens_amc, vel, tlist[j], nfw=NFW)[0]
+         
+                
+            bw_norm = mass * bwidth / (2*np.pi) / 6.58e-16 # Hz
+            rate_temp *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (2*t_obs)  / (dist * 3.086*10**18)**2 * 1.6022e-12 / bw_norm * 1e26 # mJy
+        
+            glong = orig_F[NSIndx, 1]
+            glat = orig_F[NSIndx, 2]
+            ang_dist = np.sqrt(glat**2 + glong**2)
+            fovS = fov_suppression(ang_dist, mass, dsize=15)
+            if fov_hit:
+                rate_temp *= fovS
+            
+            print(' \t\t Rate: ',rate_temp)
+#            if rate_temp == 0:
+#                print(rel_rows[:, 5], fovS, rate, rate_hold)
+#                continue
+            #print(rate, sense_compute(axM, bwidth=bwidth, t_obs=t_obs, SNR=5))
+            rate += rate_temp
+        if rate > 0:
+            glim = np.sqrt(sense_compute(mass, bwidth=bwidth, t_obs=t_obs, SNR=5, SEFD=sefd_list)  / rate) * 1e-12 # GeV^-1
+        else:
+            glim = 1e10
+       
+        g_realize[n_cnt] = glim
+        n_cnt += 1
+
+    if not os.path.isdir("amc_glims"):
+        os.mkdir("amc_glims")
+    
+    fileN = "amc_glims/glim_TimeAnalysis_"
+    fileN += tele_tag + "_"
+    if NFW:
+        fileN += "NFW_"
+    else:
+        fileN += "PL_"
+    fileN += "AxionMass_{:.2e}_Bwdith_{:.2e}_Tbin_{:.3f}_days_".format(mass, bwidth, t_obs)
+    fileN += fileTag
+    fileN += ".dat"
+    np.savetxt(fileN, g_realize)
+        
+    return
     
 
 def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8, tele_tag='', fov_hit=True, fileTag=''):
@@ -175,16 +320,16 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
         
         # print('Rate ratio: ', rate/rate_TEST, 'max width...', np.max(np.abs(peakF - rel_rows[:,6]) ), '90 percent', np.percentile(np.abs(peakF - rel_rows[:,6]), 90))
         
+        
         t_shift = t_obs / 2.0 * 24.0 * 60.0**2 # seconds
         t_mid = Transient_Time(bparam, rad_amc, vel) / 2
         tlist = np.linspace(t_mid - t_shift, t_mid + t_shift, 200)
         dense_scan = np.zeros_like(tlist)
         for j in range(len(tlist)):
             dense_scan[j] = Transient_AMC_DensityEval(bparam, rad_amc, dens_amc, vel, tlist[j], nfw=NFW)[0]
-            if math.isinf(dense_scan[j]):
-                print('Check inf...', bparam, rad_amc, dens_amc, vel, tlist[j])
+         
                 
-        bw_norm = axM * bwidth / 6.58e-16 # Hz
+        bw_norm = axM * bwidth / (2*np.pi) / 6.58e-16 # Hz
         rate *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (2*t_shift)  / (dist * 3.086*10**18)**2 * 1.6022e-12 / bw_norm * 1e26 # mJy
         
         glong = orig_F[NSIndx, 1]
@@ -221,4 +366,6 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
     return
 
 dsize, ndish, T_rec, eta_coll, tele_tag = tele_details(tele_name)
-Find_Ftransient(NFW=NFW, NS_filename=NS_filename, mass=ax_mass, nside=nside, bwidth=bwidth, t_obs=t_obs, dsize=dsize, ndish=ndish, T_rec=T_rec, eta_coll=eta_coll, tele_tag=tele_tag, fov_hit=fov_hit, fileTag=fileTag)
+#Find_Ftransient(NFW=NFW, NS_filename=NS_filename, mass=ax_mass, nside=nside, bwidth=bwidth, t_obs=t_obs, dsize=dsize, ndish=ndish, T_rec=T_rec, eta_coll=eta_coll, tele_tag=tele_tag, fov_hit=fov_hit, fileTag=fileTag)
+
+Time_Ftransient(NFW=NFW, NS_filename=NS_filename, mass=ax_mass, nside=nside, t_obs=t_obs, bwidth=bwidth, dsize=dsize, ndish=ndish, T_rec=T_rec, eta_coll=eta_coll, tele_tag=tele_tag, fov_hit=fov_hit, fileTag=fileTag, Time_int=Time_int, enc_rate=enc_rate, n_realize=n_realize)
