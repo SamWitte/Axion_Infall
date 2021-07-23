@@ -273,6 +273,33 @@ function dk_dl(x0, k0, Mvars)
     return dkdr_proj
 end
 
+function dk_ds(x0, k0, Mvars)
+    ω, Mvars2 = Mvars
+    θm, ωPul, B0, rNS, gammaF, t_start = Mvars2
+    ωErg = ω(x0, k0, t_start, θm, ωPul, B0, rNS, gammaF)
+    dkdr_grd = grad(kNR_e(seed(x0), k0, ωErg, t_start, θm, ωPul, B0, rNS, gammaF))
+    Bvec, ωpL = GJ_Model_vec(x0, t_start, θm, ωPul, B0, rNS)
+    
+    kmag = sqrt.(sum(k0 .* k0, dims=2))
+    Bmag = sqrt.(sum(Bvec .* Bvec, dims=2))
+    cθ = sum(k0 .* Bvec, dims=2) ./ (kmag .* Bmag)
+    khat = k0 ./ kmag
+    Bhat = Bvec ./ Bmag
+    
+    dkdr_proj_s = zeros(length(k0[:, 1]));
+    for i in 1:length(k0[:,1])
+        uvec = [k0[i,2] .* Bvec[i,3] - Bvec[i,2] .* k0[i,3],  k0[i,3] .* Bvec[i,1] - Bvec[i,3] .* k0[i,1], k0[i,1] .* Bvec[i,2] - Bvec[i,1] .* k0[i,2]] ./ Bmag[i] ./ kmag[i]
+        uhat = uvec ./ sqrt.(sum(uvec .^ 2));
+        R = [uhat[1].^2 uhat[1] .* uhat[2] .+ uhat[3] uhat[1] .* uhat[3] .- uhat[2]; uhat[1] .* uhat[2] .- uhat[3] uhat[2].^2 uhat[2] .* uhat[3] .+ uhat[1]; uhat[1].*uhat[3] .+ uhat[2] uhat[2].*uhat[3] .- uhat[1] uhat[3].^2];
+        shat = R * Bhat[i, :];
+        dkdr_proj_s[i] = abs.(sum(shat .* dkdr_grd[i]));
+        
+        # print("test 1 \t", sum(shat .* Bhat[i,:]), "\t",   sum(shat .* uhat), "\t",  sum(shat .* khat[i,:]) , "\t",  sum(shat2 .* Bhat[i,:]), "\t",   sum(shat2 .* uhat),"\t", sum(shat2 .* khat[i,:]), "\n")
+    end
+    # dkdr_proj = abs.(sum(k0 .* dkdr_grd, dims=2) ./ sqrt.(sum(k0 .^ 2, dims=2)))
+    return dkdr_proj_s
+end
+
 
 function dwdt_vec(x0, k0, tarr, Mvars)
     ω, Mvars2 = Mvars
@@ -647,7 +674,7 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; n
     end
     
 
-    dkdl = RT.dk_dl(SurfaceX[1:(cnt-1),:], SurfaceV[1:(cnt-1),:], [RT.ωNR_e, MagnetoVars]) ./ 6.58e-16;
+    dkdl = RT.dk_ds(SurfaceX[1:(cnt-1),:], SurfaceV[1:(cnt-1),:], [RT.ωNR_e, MagnetoVars]) ./ 6.58e-16;
     ctheta = RT.Get_Normal_CosTheta(SurfaceX[1:(cnt-1),:], SurfaceV[1:(cnt-1),:], Mass_a, t_in, θm, ωPul, B0, rNS)
     if sve
         dirN = "/scratch/work/"
@@ -785,8 +812,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         end
         
         Bvec, ωp = RT.GJ_Model_vec(SurfaceX, sln_t, θm, ωPul, B0, rNS);
-        BperpV = Bvec .- kini .* sum(Bvec .* kini, dims=2) ./ sum(kini .^ 2, dims=2);
-        Bperp = sqrt.(sum(BperpV .^ 2, dims=2)) .* (1.95e-20); # GeV^2
+        
+        B_tot = sqrt.(sum(BperpV .^ 2, dims=2)) .* (1.95e-20); # GeV^2
         
         
         if !RadApprox
@@ -794,7 +821,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         else
             cLen = 2.0 .* rr .* vmag_tot ./ (3.0 .* Mass_a) .* 6.56e-16 .* 2.998e5;
         end
-        probab = π ./ vmag_tot.^2 .* (1e-12 .* Bperp).^2 .* cLen ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2; # g [1e-12 GeV^-1], unitless
+        probab = π ./ vmag_tot.^2 .* (1e-12 .* B_tot ./  sin.(acos.(cθ))).^2 .* cLen ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2  ./ sin.(acos.(cθ)).^2; # g [1e-12 GeV^-1], unitless
         
         dS = rr.^2 .* sin.(acos.(SurfaceX[:, 3] ./ rr)) .* dθ .* dϕ;
         # assume number density at each point 1 / cm^3
@@ -851,7 +878,8 @@ function ConvL_weights(xfin, kfin, v_sur, tt, conL, Mvars)
         end
         thetaZ = acos.(thetaZ_hold)
         ωfull = func_use(xfin[:, :, i], kfin[:, :, i], tt[i], MagnetoVars[1], MagnetoVars[2], MagnetoVars[3], MagnetoVars[4], MagnetoVars[5])
-        phaseS[:, i] = dR[:, i] .* (Mass_a .* v_sur .- cos.(thetaZ) .* sqrt.( abs.((ωfull .^2 .-  ωpL .^ 2 ) ./ (1 .- cos.(thetaB) .^2 .* ωpL .^2 ./ ωfull .^2)))  )
+        dePhase_Factor = cos.(thetaZ) .+ sin.(thetaZ) .*  sin.(thetaB).^2 ./ tan.(thetaB) ./ (1 .- cos.(thetaB).^2 .* ωpL .^2 ./ ωfull .^2);
+        phaseS[:, i] = dR[:, i] .* (Mass_a .* v_sur .- dePhase_Factor .* sqrt.( abs.((ωfull .^2 .-  ωpL .^ 2 ) ./ (1 .- cos.(thetaB) .^2 .* ωpL .^2 ./ ωfull .^2)))  )
         
     end
     δphase = cumsum(phaseS, dims=2)
