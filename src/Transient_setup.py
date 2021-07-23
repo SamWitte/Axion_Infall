@@ -61,8 +61,8 @@ def Stripped_Files_For_RT(fileN, num_ns):
         
         
         for j in range(len(AxionMass)):
-            if np.sqrt(glt**2 + glg**2) > 6 * fwhm_radio(AxionMass[j]):
-                continue
+#            if np.sqrt(glt**2 + glg**2) > 6 * fwhm_radio(AxionMass[j]):
+#                continue
                 
             thetV = np.arccos(1.0 - 2.0 * np.random.rand())
             cmd = 'julia Transient_runner.jl ' +\

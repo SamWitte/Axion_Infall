@@ -94,7 +94,7 @@ def SEFD_tele(mass, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8):
     return SEFD
  
  
-def Time_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8, tele_tag='', fov_hit=True, fileTag='', Time_int=365, enc_rate=1, n_realize=100):
+def Time_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8, tele_tag='', fov_hit=True, fileTag='', Time_int=365, enc_rate=1, n_realize=100, andromeda=True):
     # t_obs in days, Time_int [days], enc_rate [#/day]
     if enc_rate**-1 > Time_int:
         print('Encounter rate too small! Increase Time_int')
@@ -194,11 +194,17 @@ def Time_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
          
                 
             bw_norm = mass * bwidth / (2*np.pi) / 6.58e-16 # Hz
-            rate_temp *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (2*t_obs)  / (dist * 3.086*10**18)**2 * 1.6022e-12 / bw_norm * 1e26 # mJy
+            if not andromeda:
+                rate_temp *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (2*t_obs)  / (dist * 3.086*10**18)**2 * 1.6022e-12 / bw_norm * 1e26 # mJy
+            else:
+                rate_temp *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (2*t_obs)  / (765.0 * 1e3 * 3.086*10**18)**2 * 1.6022e-12 / bw_norm * 1e26 # mJy
         
             glong = orig_F[NSIndx, 1]
             glat = orig_F[NSIndx, 2]
-            ang_dist = np.sqrt(glat**2 + glong**2)
+            if not andromeda:
+                ang_dist = np.sqrt(glat**2 + glong**2)
+            else:
+                ang_dist = np.atan(dist / (765.0 * 1e3)) * 180 / np.pi
             fovS = fov_suppression(ang_dist, mass, dsize=15)
             if fov_hit:
                 rate_temp *= fovS
@@ -234,7 +240,7 @@ def Time_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
     return
     
 
-def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8, tele_tag='', fov_hit=True, fileTag=''):
+def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidth=2e-5, dsize=15, ndish=2000, T_rec=20, eta_coll=0.8, tele_tag='', fov_hit=True, fileTag='', andromeda=True):
     # t_obs in days
 
     
@@ -330,11 +336,17 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
          
                 
         bw_norm = axM * bwidth / (2*np.pi) / 6.58e-16 # Hz
-        rate *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (2*t_shift)  / (dist * 3.086*10**18)**2 * 1.6022e-12 / bw_norm * 1e26 # mJy
+        if not andromeda:
+            rate_temp *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (2*t_obs)  / (dist * 3.086*10**18)**2 * 1.6022e-12 / bw_norm * 1e26 # mJy
+        else:
+            rate_temp *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (2*t_obs)  / (765.0 * 1e3 * 3.086*10**18)**2 * 1.6022e-12 / bw_norm * 1e26 # mJy
         
         glong = orig_F[NSIndx, 1]
         glat = orig_F[NSIndx, 2]
-        ang_dist = np.sqrt(glat**2 + glong**2)
+        if not andromeda:
+            ang_dist = np.sqrt(glat**2 + glong**2)
+        else:
+            ang_dist = np.atan(dist / (765.0 * 1e3)) * 180 / np.pi
         fovS = fov_suppression(ang_dist, axM, dsize=15)
         if fov_hit:
             rate *= fovS
