@@ -144,7 +144,7 @@ def Time_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
                 print(periodN, B0, orig_F[:, 6][possible], orig_F[:, 7][possible], np.round(orig_F[:,7][possible] / B0, 2))
                 return
             
-            dist = orig_F[NSIndx, 0] # pc
+            dist = orig_F[NSIndx, 0] - 8.5e3 # pc
             dens_amc = orig_F[NSIndx, 3] # M/pc^3
             rad_amc = orig_F[NSIndx, 4] # pc
             bparam = orig_F[NSIndx, 5] # pc
@@ -204,7 +204,7 @@ def Time_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
             if not andromeda:
                 ang_dist = np.sqrt(glat**2 + glong**2)
             else:
-                ang_dist = np.atan(dist / (765.0 * 1e3)) * 180 / np.pi
+                ang_dist = np.atan(dist * np.sin(glat) / (765.0 * 1e3)) * 180 / np.pi
             fovS = fov_suppression(ang_dist, mass, dsize=15)
             if fov_hit:
                 rate_temp *= fovS
