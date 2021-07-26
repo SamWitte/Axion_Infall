@@ -812,8 +812,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         end
         
         Bvec, ωp = RT.GJ_Model_vec(SurfaceX, sln_t, θm, ωPul, B0, rNS);
-        
-        B_tot = sqrt.(sum(BperpV .^ 2, dims=2)) .* (1.95e-20); # GeV^2
+        cθ = sum(kini .* Bvec, dims=2) ./ sum(Bvec .* Bvec, dims=2) ./ sum(kini .* kini, dims=2);
+        B_tot = sqrt.(sum(Bvec .^ 2, dims=2)) .* (1.95e-20); # GeV^2
         
         
         if !RadApprox
@@ -821,7 +821,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         else
             cLen = 2.0 .* rr .* vmag_tot ./ (3.0 .* Mass_a) .* 6.56e-16 .* 2.998e5;
         end
-        probab = π ./ vmag_tot.^2 .* (1e-12 .* B_tot ./  sin.(acos.(cθ))).^2 .* cLen ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2  ./ sin.(acos.(cθ)).^2; # g [1e-12 GeV^-1], unitless
+        probab = π ./ vmag_tot.^2 .* (1e-12 .* B_tot ./  sin.(acos.(cθ))).^2 .* cLen ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2 ; # g [1e-12 GeV^-1], unitless
         
         dS = rr.^2 .* sin.(acos.(SurfaceX[:, 3] ./ rr)) .* dθ .* dϕ;
         # assume number density at each point 1 / cm^3
