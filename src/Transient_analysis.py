@@ -347,7 +347,7 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
         if not andromeda:
             ang_dist = np.sqrt(glat**2 + glong**2)
         else:
-            ang_dist = np.atan((dist - 8.5e3) / (765.0 * 1e3)) * 180 / np.pi
+            ang_dist = np.arctan((dist - 8.5e3) / (765.0 * 1e3)) * 180 / np.pi
         fovS = fov_suppression(ang_dist, axM, dsize=dsize)
         if fov_hit:
             rate *= fovS
