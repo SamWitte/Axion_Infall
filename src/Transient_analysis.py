@@ -263,12 +263,12 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
         axM = float(files[i][find1+len('MassAx_'):find2])
         indx = -1
         # identify mass so we know how to store
-        for j in range(len(AxionMass)):
-            if axM == AxionMass[j]:
-                indx = j
-        if indx == -1:
-            print('Problem with mass!', axM)
-            break
+#        for j in range(len(AxionMass)):
+#            if axM == AxionMass[j]:
+#                indx = j
+#        if indx == -1:
+#            print('Problem with mass!', axM)
+#            break
         
         # identify NS in original file
         find1 = files[i].find('_rotPulsar_')
@@ -338,9 +338,9 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
                 
         bw_norm = axM * bwidth / (2*np.pi) / 6.58e-16 # Hz
         if not andromeda:
-            rate_temp *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (tlist[-1] - tlist[0])  / (dist * 3.086*10**18)**2 * 1.6022e-12 / bw_norm * 1e26 # mJy
+            rate *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (tlist[-1] - tlist[0])  / (dist * 3.086*10**18)**2 * 1.6022e-12 / bw_norm * 1e26 # mJy
         else:
-            rate_temp *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (tlist[-1] - tlist[0])   / (765.0 * 1e3 * 3.086*10**18)**2 * 1.6022e-12 / bw_norm * 1e26 # mJy
+            rate *= np.trapz(dense_scan.flatten(), tlist.flatten()) / (tlist[-1] - tlist[0])   / (765.0 * 1e3 * 3.086*10**18)**2 * 1.6022e-12 / bw_norm * 1e26 # mJy
         
         glong = orig_F[NSIndx, 1]
         glat = orig_F[NSIndx, 2]
