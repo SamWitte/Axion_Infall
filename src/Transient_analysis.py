@@ -256,6 +256,7 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
         
     files = glob.glob('results/Minicluster_PeriodAvg*')
     prim_beam = 0
+    no_photons = 0
     # cycle through output files
     for i in range(len(files)):
         find1 = files[i].find('MassAx_')
@@ -313,6 +314,7 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
         viewA = int(np.random.rand(1) * indxs)
         rel_rows = file_in[pixel_indices == viewA]
         if len(rel_rows[:,0]) == 0 or np.sum(rel_rows[:, 5]) == 0:
+            no_photons += 1
             continue
         
         b_low = np.percentile(rel_rows[:,6], 10)
@@ -383,7 +385,7 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
         fileN += ".dat"
         np.savetxt(fileN, glist[i])
     
-    print('Num out of prim beam {:.0f} out of {:.0f}'.format(prim_beam, len(files)))
+    print('Num out of prim beam {:.0f}, num with no photons {:.0f}, out of {:.0f}'.format(prim_beam, no_photons, len(files)))
     return
 
 dsize, ndish, T_rec, eta_coll, tele_tag = tele_details(tele_name)
