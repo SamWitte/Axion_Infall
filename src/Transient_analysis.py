@@ -208,7 +208,10 @@ def Time_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
             fovS = fov_suppression(ang_dist, mass, dsize=dsize)
             
             if fov_hit:
-                rate_temp *= fovS
+                if fovS > 1e-5:
+                    rate_temp *= fovS
+                else:
+                    rate_temp = 0.0
             
             print(' \t\t Rate: ',rate_temp)
 #            if rate_temp == 0:
@@ -355,9 +358,12 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
             if ang_dist * 60 > 1:
                 prim_beam += 1
         fovS = fov_suppression(ang_dist, axM, dsize=dsize)
-        print("HERE! Ang View S.", ang_dist*60, fovS)
+        #print("HERE! Ang View S.", ang_dist*60, fovS)
         if fov_hit:
-            rate *= fovS
+            if fovS > 1e-5:
+                rate *= fovS
+            else:
+                rate *= 0.0
             
         
         if rate == 0:
