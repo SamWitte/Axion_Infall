@@ -11,11 +11,11 @@ from scipy.stats import poisson
 
 NFW = True
 nside = 8
-t_obs = 1.0 # days
-bwidth = 5e-6
+t_obs = 0.4166 # days
+bwidth = 9.5e-6
 tele_name = 'GBT' # SKA-Mid, SKA-Low, Hirax, GBT
-ax_mass = 5.7e-5 # eV
-NS_filename = 'Interaction_params_SJW_PL_AScut_ma_57mueV_delta_a.txt'
+ax_mass = 4.1564e-5 # eV
+NS_filename = 'Interaction_params_SJW_PL_AScut_ma_41_564mueV_delta_a.txt'
 fov_hit = False # apply FoV suppression of rate...
 fileTag = '_'
 
@@ -204,8 +204,8 @@ def Time_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
             if not andromeda:
                 ang_dist = np.sqrt(glat**2 + glong**2)
             else:
-                ang_dist = np.atan(dist * np.sin(glat) / (765.0 * 1e3)) * 180 / np.pi
-            fovS = fov_suppression(ang_dist, mass, dsize=15)
+                ang_dist = np.arctan(dist * np.sin(glat) / (765.0 * 1e3)) * 180 / np.pi
+            fovS = fov_suppression(ang_dist, mass, dsize=dsize)
             if fov_hit:
                 rate_temp *= fovS
             
@@ -347,7 +347,7 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
             ang_dist = np.sqrt(glat**2 + glong**2)
         else:
             ang_dist = np.atan(dist / (765.0 * 1e3)) * 180 / np.pi
-        fovS = fov_suppression(ang_dist, axM, dsize=15)
+        fovS = fov_suppression(ang_dist, axM, dsize=dsize)
         if fov_hit:
             rate *= fovS
             
@@ -378,6 +378,6 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
     return
 
 dsize, ndish, T_rec, eta_coll, tele_tag = tele_details(tele_name)
-#Find_Ftransient(NFW=NFW, NS_filename=NS_filename, mass=ax_mass, nside=nside, bwidth=bwidth, t_obs=t_obs, dsize=dsize, ndish=ndish, T_rec=T_rec, eta_coll=eta_coll, tele_tag=tele_tag, fov_hit=fov_hit, fileTag=fileTag)
+Find_Ftransient(NFW=NFW, NS_filename=NS_filename, mass=ax_mass, nside=nside, bwidth=bwidth, t_obs=t_obs, dsize=dsize, ndish=ndish, T_rec=T_rec, eta_coll=eta_coll, tele_tag=tele_tag, fov_hit=fov_hit, fileTag=fileTag)
 
 Time_Ftransient(NFW=NFW, NS_filename=NS_filename, mass=ax_mass, nside=nside, t_obs=t_obs, bwidth=bwidth, dsize=dsize, ndish=ndish, T_rec=T_rec, eta_coll=eta_coll, tele_tag=tele_tag, fov_hit=fov_hit, fileTag=fileTag, Time_int=Time_int, enc_rate=enc_rate, n_realize=n_realize)

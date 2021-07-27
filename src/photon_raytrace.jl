@@ -825,7 +825,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         
         dS = rr.^2 .* sin.(acos.(SurfaceX[:, 3] ./ rr)) .* dθ .* dϕ;
         # assume number density at each point 1 / cm^3
-        SaveAll[:, 6] .= 1.0 .* dS[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons -- note i've neglected rho! multiply by rho to get L in eV/s
+        SaveAll[:, 6] .= 1.0 .* dS[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons cm^3 / s -- note i've neglected rho! multiply by rho to get L in eV/s
         SaveAll[:, 6] .*= 2 ./ sqrt.(π) .* sqrt.(132698000000.0 ./ (2.998e5 .^ 2) ./ rr[:]) ./ (vel_disp ./ 2.998e5) ./ (4 .* π); # note 1 / (4 pi) corrects for non isotropic distribution.
         
         # jacterm = jacobian_Lville(acos.(view(SurfaceX, :, 3, 1) ./ sqrt.(sum(view(SurfaceX, :, :, 1) .^2, dims=2))), atan.(view(SurfaceX, :, 2, 1), view(SurfaceX, :, 1, 1)), rr, NS_vel, SurfaceV);
