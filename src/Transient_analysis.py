@@ -119,20 +119,20 @@ def Time_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
     
     while n_cnt < n_realize:
         Nevts = poisson.rvs(avgN_events)
-        NSs = np.asarray(files)[np.random.randint(0,high=len(files),size=Nevts)]
+        NSs = np.random.randint(0,high=len(files),size=Nevts)
         print('Realization {:.0f}, drawn events {:.0f}'.format(n_cnt, Nevts))
         
         rate = 0.0
         # cycle through output files
         for i in range(len(NSs)):
             # identify NS in original file
-            find1 = files[i].find('_rotPulsar_')
-            find2 = files[i].find('_B0_')
-            periodN = (2 * np.pi) / float(files[i][find1+len('_rotPulsar_'):find2])
+            find1 = files[NSs[i]].find('_rotPulsar_')
+            find2 = files[NSs[i]].find('_B0_')
+            periodN = (2 * np.pi) / float(files[NSs[i]][find1+len('_rotPulsar_'):find2])
             
-            find1 = files[i].find('_B0_')
-            find2 = files[i].find('_rNS_')
-            B0 = float(files[i][find1+len('_B0_'):find2])
+            find1 = files[NSs[i]].find('_B0_')
+            find2 = files[NSs[i]].find('_rNS_')
+            B0 = float(files[NSs[i]][find1+len('_B0_'):find2])
             
             possible = np.where(np.round(orig_F[:, 6] / periodN, 3) == 1)[0]
             holdI = np.where(np.round(orig_F[:,7][possible] / B0, 3) == 1)[0]
@@ -155,7 +155,7 @@ def Time_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
         
         
             # compute flux density
-            file_in = np.load(files[i])
+            file_in = np.load(files[NSs[i]])
             Theta = file_in[:,2]
             Phi = file_in[:,3]
             
