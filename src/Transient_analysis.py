@@ -255,6 +255,7 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
         sefd_list[i] = SEFD_tele(AxionMass[i], dsize=dsize, ndish=ndish, T_rec=T_rec, eta_coll=eta_coll)
         
     files = glob.glob('results/Minicluster_PeriodAvg*')
+    prim_beam = 0
     # cycle through output files
     for i in range(len(files)):
         find1 = files[i].find('MassAx_')
@@ -348,6 +349,8 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
             ang_dist = np.sqrt(glat**2 + glong**2)
         else:
             ang_dist = np.arctan((dist - 8.5e3) / (765.0 * 1e3)) * 180 / np.pi
+            if ang_dist * 60 > 1:
+                prim_beam += 1
         fovS = fov_suppression(ang_dist, axM, dsize=dsize)
         if fov_hit:
             rate *= fovS
@@ -379,7 +382,8 @@ def Find_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
         fileN += fileTag
         fileN += ".dat"
         np.savetxt(fileN, glist[i])
-        
+    
+    print('Num out of prim beam {:.0f} out of {:.0f}'.format(prim_beam, len(files)))
     return
 
 dsize, ndish, T_rec, eta_coll, tele_tag = tele_details(tele_name)
