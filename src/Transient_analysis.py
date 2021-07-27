@@ -206,6 +206,7 @@ def Time_Ftransient(NFW=True, NS_filename='', mass=1e-5, nside=8, t_obs=1, bwidt
             else:
                 ang_dist = np.arctan((dist - 8.5e3) * np.sin(glat) / (765.0 * 1e3)) * 180 / np.pi
             fovS = fov_suppression(ang_dist, mass, dsize=dsize)
+            print(ang_dist*60, fovS)
             if fov_hit:
                 rate_temp *= fovS
             
