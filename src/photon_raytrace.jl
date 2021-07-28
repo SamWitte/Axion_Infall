@@ -824,8 +824,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         probab = π ./ vmag_tot.^2 .* (1e-12 .* B_tot ./  sin.(acos.(cθ))).^2 .* cLen ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2 ; # g [1e-12 GeV^-1], unitless
         
         dS = rr.^2 .* sin.(acos.(SurfaceX[:, 3] ./ rr)) .* dθ .* dϕ;
-        # assume number density at each point 1 / cm^3
-        SaveAll[:, 6] .= 1.0 .* dS[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons cm^3 / s -- note i've neglected rho! multiply by rho to get L in eV/s
+        # assume number density at each point 1 / cm^3!
+        SaveAll[:, 6] .= 1.0 .* dS[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons cm^3 / s. multiply by rho to get L in eV/s
         SaveAll[:, 6] .*= 2 ./ sqrt.(π) .* sqrt.(132698000000.0 ./ (2.998e5 .^ 2) ./ rr[:]) ./ (vel_disp ./ 2.998e5) ./ (4 .* π); # note 1 / (4 pi) corrects for non isotropic distribution.
         
         # jacterm = jacobian_Lville(acos.(view(SurfaceX, :, 3, 1) ./ sqrt.(sum(view(SurfaceX, :, :, 1) .^2, dims=2))), atan.(view(SurfaceX, :, 2, 1), view(SurfaceX, :, 1, 1)), rr, NS_vel, SurfaceV);
@@ -878,7 +878,7 @@ function ConvL_weights(xfin, kfin, v_sur, tt, conL, Mvars)
         end
         thetaZ = acos.(thetaZ_hold)
         ωfull = func_use(xfin[:, :, i], kfin[:, :, i], tt[i], MagnetoVars[1], MagnetoVars[2], MagnetoVars[3], MagnetoVars[4], MagnetoVars[5])
-        dePhase_Factor = cos.(thetaZ) .+ sin.(thetaZ) .*  sin.(thetaB).^2 ./ tan.(thetaB) ./ (1 .- cos.(thetaB).^2 .* ωpL .^2 ./ ωfull .^2);
+        dePhase_Factor = cos.(thetaZ) .- ωpL .^2 ./ ωfull .^2 .* sin.(thetaZ) .*  sin.(thetaB).^2 ./ tan.(thetaB) ./ (1 .- cos.(thetaB).^2 .* ωpL .^2 ./ ωfull .^2);
         phaseS[:, i] = dR[:, i] .* (Mass_a .* v_sur .- dePhase_Factor .* sqrt.( abs.((ωfull .^2 .-  ωpL .^ 2 ) ./ (1 .- cos.(thetaB) .^2 .* ωpL .^2 ./ ωfull .^2)))  )
         
     end
