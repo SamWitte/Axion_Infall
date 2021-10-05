@@ -29,7 +29,7 @@ sve = true;
 
 file_tag = ""
 single_density_field = true # if true, assume asymptotic density described by 1 number
-
+RadApprox = false
 
 function run_all()
 
