@@ -173,61 +173,20 @@ function Find_Conversion_Surface(Ax_mass, t_in, θm, ω, B0, rNS; thetaVs=100, p
 end
 
 
-function Get_Normal_CosTheta(x_list, v_list, Ax_mass, t_in, θm, ω, B0, rNS)
-    
-    r = sqrt.(sum(x_list .^2, dims=2))
-    ϕ = atan.(view(x_list, :, 2), view(x_list, :, 1))
-    θ = acos.(view(x_list, :, 3) ./ r)
-    
-    
-    ctheta = zeros(length(θ))
-    shift = 0.001
-    
-    for i in 1:length(θ)
-        rL = LinRange(r[i] ./ 4, r[i].*4, 5000);
-        x0 = [rL .* sin.(θ[i] ) .* cos.(ϕ[i]) rL .* sin.(θ[i] ) .* sin.(ϕ[i]) rL .* cos.(θ[i])];
-        ωpL = GJ_Model_ωp_vec(x0, t_in, θm, ω, B0, rNS);
-        cx_list = get_crossings(log.(ωpL) .- log.(Ax_mass));
-        cross = apply(cx_list, rL);
-        rMean = cross[1]
-        xMEAN = [rMean .* sin.(θ[i]) .* cos.(ϕ[i]) rMean .* sin.(θ[i]) .* sin.(ϕ[i]) rMean .* cos.(θ[i])];
-        
-        
-        
-        x0 = [rL .* sin.(θ[i] .+ shift) .* cos.(ϕ[i]) rL .* sin.(θ[i] .+ shift) .* sin.(ϕ[i]) rL .* cos.(θ[i] .+ shift)];
-        ωpL = GJ_Model_ωp_vec(x0, t_in, θm, ω, B0, rNS);
-        cx_list = get_crossings(log.(ωpL) .- log.(Ax_mass));
-        cross = apply(cx_list, rL);
-        if length(cx_list.i1) != 0
-            rx = cross[1]
-        else
-            rx = rMean
-        end
-        finalVec_N1 = [rx .* sin.(θ[i] .+ shift) .* cos.(ϕ[i]) rx .* sin.(θ[i] .+ shift) .* sin.(ϕ[i]) rx .* cos.(θ[i] .+ shift)];
-        
-        finalVec_N1 .-= xMEAN;
-        
-        x0 = [rL .* sin.(θ[i] .- shift) .* cos.(ϕ[i] .+ 2 .* shift) rL .* sin.(θ[i] .- shift) .* sin.(ϕ[i] + 2 .* shift) rL .* cos.(θ[i] .- shift)];
-        ωpL = GJ_Model_ωp_vec(x0, t_in, θm, ω, B0, rNS);
-        cx_list = get_crossings(log.(ωpL) .- log.(Ax_mass));
-        cross = apply(cx_list, rL);
-        if length(cx_list.i1) != 0
-            rx = cross[1]
-        else
-            rx = rMean
-        end
-        finalVec_N2 = [rx .* sin.(θ[i] .- shift) .* cos.(ϕ[i] + 2 .* shift) rx .* sin.(θ[i] .- shift) .* sin.(ϕ[i] .+ 2 .* shift) rx .* cos.(θ[i] .- shift)];
-        finalVec_N2 .-= xMEAN;
-        
-        val = [(finalVec_N1[2] .* finalVec_N2[3] .- finalVec_N1[3] .* finalVec_N2[2]) (finalVec_N1[3] .* finalVec_N2[1] .- finalVec_N1[1] .* finalVec_N2[3]) (finalVec_N1[1] .* finalVec_N2[2] .- finalVec_N1[2] .* finalVec_N2[1])];
-        val ./= sqrt.(sum(val.^2));
-        khat = v_list[i, :] ./  sqrt.(sum(v_list[i, :].^2));
-        
-        ctheta[i] = abs.(val[1] .* khat[1] .+ val[2] .* khat[2] .+ val[3] .* khat[3]);
+function surfNorm(x0, k0, Mvars; return_cos=true)
+    ω, Mvars2 = Mvars
+    θm, ωPul, B0, rNS, gammaF, t_start = Mvars2
+    dωdr_grd = grad(GJ_Model_ωp_vec(seed(x0), t_start, θm, ωPul, B0, rNS))
+    snorm = dωdr_grd ./ sqrt.(sum(dωdr_grd .^ 2, dims=2))
+    ctheta = (sum(k0 .* snorm, dims=2) ./ sqrt.(sum(k0 .^ 2, dims=2)))
+    if return_cos
+        return ctheta
+    else
+        return ctheta, snorm
     end
-    
-    return ctheta
 end
+
+
 
 
 
@@ -548,7 +507,6 @@ end
 
 
 
-
 function solve_vel_CS(θ, ϕ, r, NS_vel; guess=[0.1 0.1 0.1])
     ff = sum(NS_vel.^2); # unitless
     G = 132698000000.0 # km M_odot^-1 * (km/s)^2
@@ -608,92 +566,90 @@ function test_vs_soln(θ, ϕ, r, NS_vel, x)
 end
 
 
-function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; nsteps=10000, ln_tstart=-4, ln_tend=5, ode_err=1e-8, phiVs=100, thetaVs=100, threshold=0.05, sve=False)
+function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; nsteps=10000, ln_tstart=-4, ln_tend=5, ode_err=1e-8, phiVs=100, thetaVs=100, threshold=0.05, single_density_field=true, sve=False)
 
     NS_vel = [sin.(NS_vel_T) 0.0 cos.(NS_vel_T)] .* NS_vel_M;
     
     RT = RayTracer; # define ray tracer module
+    func_use = RT.ωNR_e
     ConvR = RT.Find_Conversion_Surface(Mass_a, t_in, θm, ωPul, B0, rNS, thetaVs=thetaVs, phiVs=phiVs)
     ConvR_Cut = ConvR[ConvR[:,3] .>= rNS, :]
     NumerP = [ln_tstart, ln_tend, ode_err]
-    vGu=0.3
+    vGu=0.3 # guess point
     
-    finalX = zeros(2 * length(ConvR_Cut[:,1]), 3)
-    finalV = zeros(2 * length(ConvR_Cut[:,1]), 3)
+    if !single_density_field
+        finalX = zeros(2 * length(ConvR_Cut[:,1]), 3)
+        finalV = zeros(2 * length(ConvR_Cut[:,1]), 3)
+    end
     
     SurfaceX = zeros(2 * length(ConvR_Cut[:,1]), 3)
     SurfaceV = zeros(2 * length(ConvR_Cut[:,1]), 3)
-    # SurfaceDen = zeros(2 * length(ConvR_Cut[:,1]))
     cnt = 1;
-    
     MagnetoVars = [θm, ωPul, B0, rNS, [1.0 1.0], t_in]
     
     for i in 1:length(ConvR_Cut[:,1])
-        
         θ, ϕ, r = ConvR_Cut[i,:]
 
         
         velV = solve_vel_CS(θ, ϕ, r, NS_vel, guess=[vGu vGu vGu])
         velV2 = solve_vel_CS(θ, ϕ, r, NS_vel, guess=[-vGu -vGu -vGu])
+        xPos = [r .* sin.(θ) .* cos.(ϕ) r .* sin.(θ) .* sin.(ϕ) r .* cos.(θ)]
         
-        vel_init = [velV; velV2];
-        # dense_enhance = [jacobian_Lville(θ, ϕ, r, NS_vel, velV) ;  jacobian_Lville(θ, ϕ, r, NS_vel, velV2)]
-        # print("\n")
-        x_init = [r .* sin.(θ) .* cos.(ϕ) r .* sin.(θ) .* sin.(ϕ) r .* cos.(θ); r .* sin.(θ) .* cos.(ϕ) r .* sin.(θ) .* sin.(ϕ) r .* cos.(θ)]
-        xF, vF = RT.propagateAxion(x_init, vel_init, nsteps, NumerP);
+        if single_density_field
+            SurfaceX[cnt, :] = xPos;
+            SurfaceV[cnt, :] = velV;
+            cnt += 1;
+            SurfaceX[cnt, :] = xPos;
+            SurfaceV[cnt, :] = velV2;
+            cnt += 1;
         
+        else
+            vel_init = [velV; velV2];
+            x_init = [r .* sin.(θ) .* cos.(ϕ) r .* sin.(θ) .* sin.(ϕ) r .* cos.(θ); r .* sin.(θ) .* cos.(ϕ) r .* sin.(θ) .* sin.(ϕ) r .* cos.(θ)]
+            xF, vF = RT.propagateAxion(x_init, vel_init, nsteps, NumerP);
    
-        if sqrt.(sum((hcat(vF[1, :, end]...) .- NS_vel) .^ 2)) < threshold
-            finalX[cnt, :] = xF[1, :, end];
-            finalV[cnt, :] = vF[1, :, end];
-            SurfaceX[cnt, :] = xF[1, :, 1];
-            SurfaceV[cnt, :] = vF[1, :, 1];
-            # SurfaceDen[cnt] = dense_enhance[1];
-            
-            cnt += 1;
-        # else
-            # hold1 = test_vs_soln(θ, ϕ, r, NS_vel, velV)
-            # print(hold1,"\t");
-            # print(sqrt.(sum((hcat(vF[1, :, end]...) .- NS_vel) .^ 2)) ./ sqrt.(sum(NS_vel.^2)), "\t")
-        end
+            if sqrt.(sum((hcat(vF[1, :, end]...) .- NS_vel) .^ 2)) < threshold
+                finalX[cnt, :] = xF[1, :, end];
+                finalV[cnt, :] = vF[1, :, end];
+                SurfaceX[cnt, :] = xF[1, :, 1];
+                SurfaceV[cnt, :] = vF[1, :, 1];
+                cnt += 1;
+            end
         
-        if sqrt.(sum((hcat(vF[2, :, end]...) .- NS_vel) .^ 2)) ./ sqrt.(sum(NS_vel.^2)) < threshold
-            finalX[cnt, :] = xF[2, :, end];
-            finalV[cnt, :] = vF[2, :, end];
-            SurfaceX[cnt, :] = xF[2, :, 1];
-            SurfaceV[cnt, :] = vF[2, :, 1];
-            # SurfaceDen[cnt] = dense_enhance[2];
+            if sqrt.(sum((hcat(vF[2, :, end]...) .- NS_vel) .^ 2)) ./ sqrt.(sum(NS_vel.^2)) < threshold
+                finalX[cnt, :] = xF[2, :, end];
+                finalV[cnt, :] = vF[2, :, end];
+                SurfaceX[cnt, :] = xF[2, :, 1];
+                SurfaceV[cnt, :] = vF[2, :, 1];
+                cnt += 1;
+            end
             
-            cnt += 1;
-        # else
-            # hold2 = test_vs_soln(θ, ϕ, r, NS_vel, velV2)
-            # print(hold2,"\n");
-            # print(sqrt.(sum((hcat(vF[2, :, end]...) .- NS_vel) .^ 2)) ./ sqrt.(sum(NS_vel.^2)), "\n")
         end
         
     end
     
-
-    dkdl = RT.dk_ds(SurfaceX[1:(cnt-1),:], SurfaceV[1:(cnt-1),:], [RT.ωNR_e, MagnetoVars]) ./ 6.58e-16;
-    ctheta = RT.Get_Normal_CosTheta(SurfaceX[1:(cnt-1),:], SurfaceV[1:(cnt-1),:], Mass_a, t_in, θm, ωPul, B0, rNS)
+    
+    dkdl = RT.dk_ds(SurfaceX[1:(cnt-1),:], Mass_a .* SurfaceV[1:(cnt-1),:], [RT.ωNR_e, MagnetoVars]) ./ (6.58e-16 .* 2.998e5) ; 1 / km^2
+    ctheta = surfNorm(SurfaceX[1:(cnt-1),:], SurfaceV[1:(cnt-1),:], [func_use, MagnetoVars]; return_cos=true)
+    
     if sve
         dirN = "/scratch/work/"
         fileTail = "PhaseSpace_Map_AxionM_"*string(Mass_a)*"_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
         fileTail *= "Time_"*string(t_in)*"_sec_"
-        
         fileTail *= "_NS_Mag_"*string(round(NS_vel_M, digits=5))*"_NS_Theta_"*string(round(NS_vel_T, digits=3))
-        
         fileTail *= "_.npz"
         npzwrite(dirN*"SurfaceX_"*fileTail, SurfaceX[1:(cnt-1),:])
         npzwrite(dirN*"SurfaceV_"*fileTail, SurfaceV[1:(cnt-1),:])
-        npzwrite(dirN*"FinalX_"*fileTail, finalX[1:(cnt-1),:])
-        npzwrite(dirN*"FinalV_"*fileTail, finalV[1:(cnt-1),:])
-        # npzwrite(dirN*"SurfaceDen_"*fileTail, SurfaceDen[1:(cnt-1),:])
         npzwrite(dirN*"dkdz_"*fileTail, dkdl)
         npzwrite(dirN*"ctheta_"*fileTail, ctheta)
+        if !single_density_field
+            npzwrite(dirN*"FinalX_"*fileTail, finalX[1:(cnt-1),:])
+            npzwrite(dirN*"FinalV_"*fileTail, finalV[1:(cnt-1),:])
+        end
         
+            
     else
-        return SurfaceX[1:(cnt-1),:], SurfaceV[1:(cnt-1),:], finalX[1:(cnt-1),:], finalV[1:(cnt-1),:], dkdl, ctheta
+        return SurfaceX, SurfaceV, dkdl, ctheta
     end
 
 end
@@ -721,7 +677,7 @@ function test_runner_surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M,
 
 end
 
-function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, NS_vel_M=0.0, NS_vel_T=0.0, RadApprox=false, phiVs=100, thetaVs=100, vel_disp=1.0)
+function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, NS_vel_M=0.0, NS_vel_T=0.0, RadApprox=false, phiVs=100, thetaVs=100, vel_disp=1.0, single_density_field=true)
 
     NS_vel = [sin.(NS_vel_T) 0.0 cos.(NS_vel_T)] .* NS_vel_M;
     RT = RayTracer; # define ray tracer module
@@ -738,8 +694,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
     NumerPass = [ln_t_start, ln_t_end, ode_err];
     ttΔω = exp.(LinRange(ln_t_start, ln_t_end, ntimes));
     
-    θL = LinRange(0.02 , π - 0.02, thetaVs);
-    ϕL = LinRange(0.02, 2 * π - 0.02, phiVs);
+    θL = LinRange(0.01 , π - 0.01, thetaVs);
+    ϕL = LinRange(0.01, 2 * π - 0.01, phiVs);
     dθ = θL[2] - θL[1];
     dϕ = ϕL[2] - ϕL[1];
     
@@ -749,32 +705,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
     for i in 1:length(t_list)
         t_in = t_list[i]
         
-        fileTail = "PhaseSpace_Map_AxionM_"*string(Mass_a)*"_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
-        fileTail *= "Time_"*string(t_in)*"_sec_"
-        fileTail *= "_NS_Mag_"*string(round(NS_vel_M, digits=5))*"_NS_Theta_"*string(round(NS_vel_T, digits=3))
-        fileTail *= "_.npz"
-        
-        sfx_fnme = dirN*"SurfaceX_"*fileTail
-        sfv_fnme = dirN*"SurfaceV_"*fileTail
-        sfdk_fnme = dirN*"dkdz_"*fileTail
-        sfct_fnme = dirN*"ctheta_"*fileTail
-        # sfden_fnme = dirN*"SurfaceDen_"*fileTail
-        
-        if isfile(sfx_fnme)&&isfile(sfv_fnme)&&isfile(sfdk_fnme)&&isfile(sfct_fnme)
-            SurfaceX = npzread(sfx_fnme)
-            SurfaceV = npzread(sfv_fnme)
-            dkdl = npzread(sfdk_fnme)
-            ctheta = npzread(sfct_fnme)
-            if length(SurfaceX) == 0
-                continue
-            end
-        else
-            print(sfx_fnme,"\n")
-            print("files not generated....\n\n")
-            return
-        end
-        
-        SaveAll = zeros(length(SurfaceX[:, 1]), 7);
+        SurfaceX, SurfaceV, dkdl, ctheta = surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; hiVs=phiVs,thetaVs=thetaVs,single_density_field=single_density_field, sve=False)
+        SaveAll = zeros(length(SurfaceX[:, 1]), 18);
         
         sln_t = ones(length(SurfaceX[:,1])) .* t_list[i]
         vmag_tot = sqrt.(sum(SurfaceV.^2, dims=2))
@@ -791,19 +723,13 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
 
         # compute energy dispersion (ωf - ωi) / ωi
         passA = [func_use, MagnetoVars];
+        
         Δω = tF[:, end] ./ Mass_a;
         opticalDepth = RT.tau_cyc(xF, kF, ttΔω, passA, Mass_a);
     
-        SaveAll[:, 1] .= view(θf, :);
-        SaveAll[:, 2] .= view(ϕf,:);
-        SaveAll[:, 3] .= view(θfX, :);
-        SaveAll[:, 4] .= view(ϕfX, :);
-        SaveAll[:, 5] .= sqrt.(sum(xF[:, :, end] .^2, dims=2))[:]; # r final
-        SaveAll[:, 7] .= Δω[:];
-        
-
+         
         num_photons = length(SurfaceX[:,1])
-        sln_ConVL = sqrt.(π ./ dkdl.^2); # km
+        sln_ConVL = sqrt.(π ./ dkdl); # km
         passA2 = [func_use, MagnetoVars, Mass_a];
         if CLen_Scale
             weightC = ConvL_weights(xF, kF, vmag_tot, ttΔω, sln_ConVL, passA2)
@@ -812,7 +738,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         end
         
         Bvec, ωp = RT.GJ_Model_vec(SurfaceX, sln_t, θm, ωPul, B0, rNS);
-        cθ = sum(kini .* Bvec, dims=2) ./ sum(Bvec .* Bvec, dims=2) ./ sum(kini .* kini, dims=2);
+        cθ = sum(kini .* Bvec, dims=2) ./ sqrt.(sum(Bvec.^2, dims=2)) ./ sqrt.(sum(kini.^2, dims=2));
         B_tot = sqrt.(sum(Bvec .^ 2, dims=2)) .* (1.95e-20); # GeV^2
         
         
@@ -821,21 +747,30 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         else
             cLen = 2.0 .* rr .* vmag_tot ./ (3.0 .* Mass_a) .* 6.56e-16 .* 2.998e5;
         end
-        probab = π ./ vmag_tot.^2 .* (1e-12 .* B_tot ./  sin.(acos.(cθ))).^2 .* cLen ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2 ; # g [1e-12 GeV^-1], unitless
+        probab = π ./ 2.0 .* vmag_tot.^2 .* (1e-12 .* B_tot ./  sin.(acos.(cθ))).^2 .* cLen ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2 ./  sin.(acos.(cθ)).^2 ; # g [1e-12 GeV^-1], unitless
         
         dS = rr.^2 .* sin.(acos.(SurfaceX[:, 3] ./ rr)) .* dθ .* dϕ;
-        # assume number density at each point 1 / cm^3!
-        SaveAll[:, 6] .= 1.0 .* dS[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons cm^3 / s. multiply by rho to get L in eV/s
+        # assume number density at each point 1 / cm^3! Arbitrary but we re-scale after.
+        SaveAll[:, 1] .= view(θf, :);
+        SaveAll[:, 2] .= view(ϕf,:);
+        SaveAll[:, 3] .= view(θfX, :);
+        SaveAll[:, 4] .= view(ϕfX, :);
+        SaveAll[:, 5] .= sqrt.(sum(xF[:, :, end] .^2, dims=2))[:]; # r final
+        SaveAll[:, 7] .= Δω[:];
+        SaveAll[:, 6] .= 1.0 .* dS[:] .* ctheta[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons cm^3 / s. multiply by rho to get L in eV/s
         SaveAll[:, 6] .*= 2 ./ sqrt.(π) .* sqrt.(132698000000.0 ./ (2.998e5 .^ 2) ./ rr[:]) ./ (vel_disp ./ 2.998e5) ./ (4 .* π); # note 1 / (4 pi) corrects for non isotropic distribution.
         
-        # jacterm = jacobian_Lville(acos.(view(SurfaceX, :, 3, 1) ./ sqrt.(sum(view(SurfaceX, :, :, 1) .^2, dims=2))), atan.(view(SurfaceX, :, 2, 1), view(SurfaceX, :, 1, 1)), rr, NS_vel, SurfaceV);
-        # den1 = 2 ./ sqrt.(π) .* sqrt.(132698000000.0 ./ (2.998e5 .^ 2) ./ rr) ./ (vel_disp ./ 2.998e5) ./ (4 .* π);
-        # print(minimum(den1), "\t", maximum(den1), "\t", minimum(jacterm), "\t", maximum(jacterm), "\n")
-        
-        
-        if !RadApprox
-            SaveAll[:, 6] .*= ctheta[:];
-        end
+        SaveAll[:, 8] .= sln_ConVL[:];
+        SaveAll[:, 9] .= SurfaceX[:, 1]; # initial x
+        SaveAll[:, 10] .= SurfaceX[:, 2]; # initial y
+        SaveAll[:, 11] .= SurfaceX[:, 3]; # initial z
+        SaveAll[:, 12] .= kini[:, 1]; # initial kx
+        SaveAll[:, 13] .= kini[:, 2]; # initial ky
+        SaveAll[:, 14] .= kini[:, 3]; # initial kz
+        SaveAll[:, 15] .= opticalDepth[:]; # optical depth
+        SaveAll[:, 16] .= weightC[:]; #
+        SaveAll[:, 17] .= probab[:]; # optical depth
+        SaveAll[:, 18] .= ctheta[:]; # surf norm
             
         fileN = "/scratch/work/Minicluster_Time_"*string(t_list[i])*"_MassAx_"*string(Mass_a);
         fileN *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
@@ -907,10 +842,9 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
         file_tag *= "_RadApprox_"
     end
 
-    dirN = "temp_storage/"
     
-    sve_info = zeros(2, 7);
-    
+    table_started = false
+    dt = (t_list[2] - t_list[1])
     for i in 1:length(t_list)
         t_in = t_list[i]
         
@@ -926,7 +860,12 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
         end
         
         hold = npzread(fileN)
-        sve_info = vcat((sve_info, hold)...)
+        if !table_started
+            sve_info = hold
+            table_started = true
+        else
+            sve_info = vcat((sve_info, hold)...)
+        end
         
     end
     
@@ -934,6 +873,7 @@ function period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_
     if length(sve_info[:,6]) > 0
         period = 2 .* π ./ ωPul;
         sve_info[:, 6] ./= period;
+        sve_info[:, 6] .*= dt;
         
         fileS = fileN = "results/Minicluster_PeriodAvg_MassAx_"*string(Mass_a);
         fileS *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
