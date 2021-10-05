@@ -630,7 +630,7 @@ function surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; n
     
     
     dkdl = RT.dk_ds(SurfaceX[1:(cnt-1),:], Mass_a .* SurfaceV[1:(cnt-1),:], [RT.ωNR_e, MagnetoVars]) ./ (6.58e-16 .* 2.998e5) ; # 1 / km^2
-    ctheta = surfNorm(SurfaceX[1:(cnt-1),:], SurfaceV[1:(cnt-1),:], [func_use, MagnetoVars]; return_cos=true)
+    ctheta = RT.surfNorm(SurfaceX[1:(cnt-1),:], SurfaceV[1:(cnt-1),:], [func_use, MagnetoVars]; return_cos=true)
     
     if sve
         dirN = "/scratch/work/"
