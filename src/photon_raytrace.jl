@@ -705,7 +705,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
     for i in 1:length(t_list)
         t_in = t_list[i]
         
-        SurfaceX, SurfaceV, dkdl, ctheta = surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; hiVs=phiVs,thetaVs=thetaVs,single_density_field=single_density_field, sve=False)
+        SurfaceX, SurfaceV, dkdl, ctheta = surface_solver(Mass_a, θm, ωPul, B0, rNS, t_in, NS_vel_M, NS_vel_T; hiVs=phiVs,thetaVs=thetaVs,single_density_field=single_density_field, sve=false)
         SaveAll = zeros(length(SurfaceX[:, 1]), 18);
         
         sln_t = ones(length(SurfaceX[:,1])) .* t_list[i]
