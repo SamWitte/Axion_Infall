@@ -736,6 +736,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         else
             weightC = ones(num_photons)
         end
+        weightC[weightC[:] .> 1.0] .= 0.0;
         
         Bvec, ωp = RT.GJ_Model_vec(SurfaceX, sln_t, θm, ωPul, B0, rNS);
         cθ = sum(kini .* Bvec, dims=2) ./ sqrt.(sum(Bvec.^2, dims=2)) ./ sqrt.(sum(kini.^2, dims=2));
