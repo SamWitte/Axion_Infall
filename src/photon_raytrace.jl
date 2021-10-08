@@ -748,9 +748,12 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         else
             cLen = 2.0 .* rr .* vmag_tot ./ (3.0 .* Mass_a) .* 6.56e-16 .* 2.998e5;
         end
-        # probabOLD = π ./ 2.0 ./ vmag_tot.^2 .* (1e-12 .* B_tot ./  sin.(acos.(cθ))).^2 .* cLen ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2 ./  sin.(acos.(cθ)).^2 ; # g [1e-12 GeV^-1], unitless    
+        # probabOLD = π ./ 2.0 ./ vmag_tot.^2 .* (1e-12 .* B_tot ./  sin.(acos.(cθ))).^2 .* cLen ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2 ./  sin.(acos.(cθ)).^2 ; # g [1e-12 GeV^-1], unitless
         probab = π ./ 2.0 .* (1e-12 .* B_tot).^2 .* Mass_a.^4 .* (1 .+ vmag_tot.^2).^3 .* cLen ./ (2 .* (Mass_a.^2 .* vmag_tot .* (1 .+ vmag_tot.^2) .- vmag_tot .* ωp.^2 .* cθ.^2).^2) ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2 ; # g [1e-12 GeV^-1], unitless
     
+        pref1 = 1 .+ (ωp.^4 .* cθ.^2 .* sin.(acos.(cθ)) .^2) ./ (Mass_a.^2 .* (1 .+ vmag_tot.^2) .- ωp.^2 .* cθ.^2).^2;
+        pref2 = (ωp.^2 .* cθ.^2) ./ (Mass_a.^2 .*  (1 .+ vmag_tot.^2)) .- 1;
+        Prob = π ./ 2.0 .* (1e-12 .* B_tot).^2 .* (1 .+ vmag_tot.^2) .* sin.(acos.(cθ)) .^2 .* pref1  .* cLen ./ (vmag_tot .^2 .* pref2.^2) ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2 ; # g [1e-12 GeV^-1], unitless
         
         dS = rr.^2 .* sin.(acos.(SurfaceX[:, 3] ./ rr)) .* dθ .* dϕ;
         # assume number density at each point 1 / cm^3! Arbitrary but we re-scale after.
