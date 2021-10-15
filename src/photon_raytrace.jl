@@ -764,7 +764,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         SaveAll[:, 4] .= view(ϕfX, :);
         SaveAll[:, 5] .= sqrt.(sum(xF[:, :, end] .^2, dims=2))[:]; # r final
         SaveAll[:, 7] .= Δω[:];
-        SaveAll[:, 6] .= 1.0 .* dS[:] .* ctheta[:] .* vmag_tot[:].^3  .* probab[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons cm^3 / s. multiply by rho to get L in eV/s
+        SaveAll[:, 6] .= 1.0 .* dS[:] .* ctheta[:] .* vmag_tot[:].^3  .* Prob[:] .* weightC[:] .^ 2 .* exp.(-opticalDepth[:]) .* (1e5).^2 .* 2.998e10; # num photons cm^3 / s. multiply by rho to get L in eV/s
         SaveAll[:, 6] .*= 2 ./ sqrt.(π) .* sqrt.(132698000000.0 ./ (2.998e5 .^ 2) ./ rr[:]) ./ (vel_disp ./ 2.998e5) ./ (4 .* π); # note 1 / (4 pi) corrects for non isotropic distribution.
         
         SaveAll[:, 8] .= sln_ConVL[:];
