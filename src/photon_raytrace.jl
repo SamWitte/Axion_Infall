@@ -110,8 +110,8 @@ function propagate(ω, x0::Matrix, k0::Matrix,  nsteps::Int, Mvars::Array, Numer
     u0 = ([x0 k0 zeros(length(x0[:, 1]))])
 
     prob = ODEProblem(func!, u0, tspan, [ω, Mvars], reltol=ode_err*1e0, abstol=ode_err, maxiters=1e5)
-    sol = solve(prob, lsoda(), saveat=saveat)
-    # sol = solve(prob, Vern6(), saveat=saveat)
+    # sol = solve(prob, lsoda(), saveat=saveat)
+    sol = solve(prob, Vern6(), saveat=saveat)
     # sol = solve(prob, Tsit5(), saveat=saveat, batch_size=10)
     x = cat([Array(u)[:, 1:3] for u in sol.u]..., dims = 3);
     k = cat([Array(u)[:, 4:6] for u in sol.u]..., dims = 3);
