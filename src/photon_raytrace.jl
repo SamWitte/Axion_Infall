@@ -110,7 +110,8 @@ function propagate(ω, x0::Matrix, k0::Matrix,  nsteps::Int, Mvars::Array, Numer
     u0 = ([x0 k0 zeros(length(x0[:, 1]))])
 
     prob = ODEProblem(func!, u0, tspan, [ω, Mvars], reltol=ode_err*1e0, abstol=ode_err, maxiters=1e5)
-    sol = solve(prob, Vern6(), saveat=saveat)
+    sol = solve(prob, lsoda(), saveat=saveat)
+    # sol = solve(prob, Vern6(), saveat=saveat)
     # sol = solve(prob, Tsit5(), saveat=saveat, batch_size=10)
     x = cat([Array(u)[:, 1:3] for u in sol.u]..., dims = 3);
     k = cat([Array(u)[:, 4:6] for u in sol.u]..., dims = 3);
@@ -711,7 +712,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         sln_t = ones(length(SurfaceX[:,1])) .* t_list[i]
         vmag_tot = sqrt.(sum(SurfaceV.^2, dims=2))
         kini = SurfaceV .* Mass_a
-        MagnetoVars = [θm, ωPul, B0, rNS, [1.0 1.0], sln_t] # θm, ωPul, B0, rNS, gamma factors, Time = 0
+        MagnetoVars = [θm, ωPul, B0, rNS, [1.0 1.0], sln_t] # θm, ωPul, B0, rNS, gamma factors, Time0
         
         rr = sqrt.(sum(SurfaceX .^2, dims=2));
         
@@ -749,7 +750,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
             cLen = 2.0 .* rr .* vmag_tot ./ (3.0 .* Mass_a) .* 6.56e-16 .* 2.998e5;
         end
         # probabOLD = π ./ 2.0 ./ vmag_tot.^2 .* (1e-12 .* B_tot ./  sin.(acos.(cθ))).^2 .* cLen ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2 ./  sin.(acos.(cθ)).^2 ; # g [1e-12 GeV^-1], unitless
-        probab = π ./ 2.0 .* (1e-12 .* B_tot).^2 .* Mass_a.^4 .* (1 .+ vmag_tot.^2).^3 .* cLen ./ (2 .* (Mass_a.^2 .* vmag_tot .* (1 .+ vmag_tot.^2) .- vmag_tot .* ωp.^2 .* cθ.^2).^2) ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2 ; # g [1e-12 GeV^-1], unitless
+        # probab = π ./ 2.0 .* (1e-12 .* B_tot).^2 .* Mass_a.^4 .* (1 .+ vmag_tot.^2).^3 .* cLen ./ (2 .* (Mass_a.^2 .* vmag_tot .* (1 .+ vmag_tot.^2) .- vmag_tot .* ωp.^2 .* cθ.^2).^2) ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2 ; # g [1e-12 GeV^-1], unitless
     
         pref1 = 1 .+ (ωp.^4 .* cθ.^2 .* sin.(acos.(cθ)) .^2) ./ (Mass_a.^2 .* (1 .+ vmag_tot.^2) .- ωp.^2 .* cθ.^2).^2;
         pref2 = (ωp.^2 .* cθ.^2) ./ (Mass_a.^2 .*  (1 .+ vmag_tot.^2)) .- 1;
@@ -775,7 +776,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err
         SaveAll[:, 14] .= kini[:, 3]; # initial kz
         SaveAll[:, 15] .= opticalDepth[:]; # optical depth
         SaveAll[:, 16] .= weightC[:]; #
-        SaveAll[:, 17] .= probab[:]; # optical depth
+        SaveAll[:, 17] .= Prob[:]; #
         SaveAll[:, 18] .= ctheta[:]; # surf norm
             
         fileN = "/scratch/work/Minicluster_Time_"*string(t_list[i])*"_MassAx_"*string(Mass_a);
