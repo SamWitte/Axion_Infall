@@ -719,6 +719,9 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; per
         times_eval = times_eval[indx_cx .> 0]
 
         numX = length(indx_cx_cut);
+        if numX == 0
+            return 0.0, 0.0, 0, 0.0, times_eval
+        end
 
         randInx = [rand(1:length(cxing[indx_cx_cut][i])) for i in 1:numX];
         cxing = [cxing[indx_cx_cut][i][randInx[i]] for i in 1:numX];
