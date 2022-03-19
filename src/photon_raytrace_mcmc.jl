@@ -698,6 +698,7 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; per
     times_eval = times_eval[indx_cx .> 0]
 
     numX = length(cxing_short);
+    R_sample = vcat([rRND[indx_cx_cut][i] for i in 1:numX]...);
     # print(cxing, "\t", cxing_short, "\t", indx_cx_cut, "\t", randInx, "\n")
 
     if numX != 0
@@ -705,7 +706,7 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; per
         xpos = [transpose(x0_all[indx_cx_cut[i], :]) .+ transpose(vvec_all[indx_cx_cut[i], :]) .* cxing_short[i] for i in 1:numX];
         vvec_full = [transpose(vvec_all[indx_cx_cut[i],:]) .* ones(1, 3) for i in 1:numX];
 
-        R_sample = vcat([rRND[indx_cx_cut][i] for i in 1:numX]...);
+
         # print(x0_all, "\t", xpos, "\t", vvec_full, "\t", R_sample, "\n")
         t_new_arr = LinRange(- abs.(tt_ax[3] - tt_ax[1]), abs.(tt_ax[3] - tt_ax[1]), 100);
         xpos_proj = [xpos[i] .+ vvec_full[i] .* t_new_arr[:] for i in 1:numX];
@@ -722,7 +723,7 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; per
         randInx = [rand(1:length(cxing[indx_cx_cut][i])) for i in 1:numX];
         cxing = [cxing[indx_cx_cut][i][randInx[i]] for i in 1:numX];
         vvec_flat = reduce(vcat, vvec_full);
-        xpos = [xpos[indx_cx_cut,:][i] .+ vvec_full[indx_cx_cut,:][i] .* cxing[indx_cx_cut][i] for i in 1:numX];
+        xpos = [xpos[indx_cx_cut[i],:] .+ vvec_full[indx_cx_cut[i],:] .* cxing[i] for i in 1:numX];
 
         try
             xpos_flat = reduce(vcat, xpos);
