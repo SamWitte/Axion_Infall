@@ -3,47 +3,44 @@ using Statistics
 using NPZ
 using NLsolve
 using SpecialFunctions
+using Dates
+include("../src/photon_raytrace_mcmc.jl")
 
-include("../src/photon_raytrace.jl")
-
-Mass_a = 4.1e-5;
+Mass_a = 1e-5;
 Ax_g = 1e-12;
-Mass_NS=1;
-θm = 1.217;
-ωPul = 16.912;#(2 .* π) ./ 0.3069;
-B0 = 8.1e12;
+Mass_NS = 1;
+θm = 0.0;
+ωPul = (2 .* π);
+B0 = 1e14;
 rNS = 10;
-#NS_vel_M = 200.0 ./ 2.998e5;
-NS_vel_M = 0.00029;
-NS_vel_T = 2.746;
-vel_disp = 1e-5; # km/s, velocity dispersion of AMC
-n_times = 2;
-t_list = LinRange(0.0, 2.0 * π / ωPul, n_times)
-CLen_Scale = true
+gammaF = [1.0, 1.0]
+batchsize = 10;
+NS_vel_M = 0.000667;
+NS_vel_T = 1.5708;
+CLen_Scale = false
 
-phiVs = 20
-thetaVs = 20
-ln_tend = 20
-threshold = 0.0001
-sve = true;
+M_MC = 1e-10 # Solar mass
+R_MC = 3.06e9 # km
+errSlve = 1e-24
+Ntajs = 1000
+fix_time= 0.0
+period_average=true
+trace_trajs = true;
 
 file_tag = ""
 single_density_field = true # if true, assume asymptotic density described by 1 number
 RadApprox = false
 
 function run_all()
-
-##### This part unnecessary....
-#
-#    if !single_density_field
-#        for i in 1:n_times
-#            surface_solver(Mass_a, θm, ωPul, B0, rNS, t_list[i], NS_vel_M, NS_vel_T; nsteps=10, ln_tstart=-15, ln_tend=ln_tend,
-#                            ode_err=1e-10, phiVs=phiVs, thetaVs=thetaVs, threshold=threshold, sve=sve);
-#        end
-#    end
-
-    main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale, NS_vel_M=NS_vel_M, NS_vel_T=NS_vel_T, file_tag=file_tag, RadApprox=RadApprox, phiVs=phiVs, thetaVs=thetaVs, vel_disp=vel_disp, single_density_field=single_density_field)
-    period_average(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, t_list; ode_err=1e-5, CLen_Scale=CLen_Scale, NS_vel_M=NS_vel_M, NS_vel_T=NS_vel_T, file_tag=file_tag, RadApprox=RadApprox)
+    main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, batchsize; ode_err=1e-5, maxR=Nothing, cutT=1000, fix_time=fix_time, CLen_Scale=false, file_tag="", ntimes=1000, v_NS=[0 0 0], period_average=period_average, errSlve=errSlve, M_MC=M_MC, R_MC=R_MC,  save_more=true, vmean_ax=220.0, ntimes_ax=10000, dir_tag="results", trace_trajs=trace_trajs)
 end
 
+time0=Dates.now()
+
 run_all()
+
+
+time1=Dates.now()
+print("\n")
+print("time diff: ", time1-time0)
+print("\n")
