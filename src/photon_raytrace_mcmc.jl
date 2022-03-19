@@ -724,8 +724,19 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; per
 
         xpos = [xpos[indx_cx_cut,:][i] .+ vvec_full[indx_cx_cut,:][i] .* cxing[indx_cx_cut][i] for i in 1:numX];
 
-        xpos_flat = reduce(vcat, xpos);
-        vvec_flat = reduce(vcat, vvec_full);
+        try
+            xpos_flat = reduce(vcat, xpos);
+        catch
+            print("why is this a rare fail? \t", xpos, "\n")
+        end
+        try
+            xpos_flat = reduce(vcat, xpos_flat);
+            vvec_flat = reduce(vcat, vvec_full);
+        catch
+            print("for some reason reduce fail... ", vvec_full, "\t", xpos_flat, "\n")
+            vvec_flat = vvec_full;
+        end
+
 
         rmag = sqrt.(sum(xpos_flat .^ 2, dims=2));
         indx_r_cut = rmag .> rNS;
