@@ -721,7 +721,7 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; per
 
         randInx = [rand(1:length(cxing[indx_cx_cut][i])) for i in 1:numX];
         cxing = [cxing[indx_cx_cut][i][randInx[i]] for i in 1:numX];
-
+        vvec_flat = reduce(vcat, vvec_full);
         xpos = [xpos[indx_cx_cut,:][i] .+ vvec_full[indx_cx_cut,:][i] .* cxing[indx_cx_cut][i] for i in 1:numX];
 
         try
