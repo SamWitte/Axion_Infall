@@ -716,7 +716,7 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; per
         indx_cx = [if length(cxing[i]) .> 0 i else -1 end for i in 1:numX];
         indx_cx_cut = indx_cx[indx_cx .> 0];
         R_sample = R_sample[indx_cx_cut];
-        times_eval = times_eval[indx_cx .> 0]
+        times_eval = times_eval[indx_cx_cut]
 
         numX = length(indx_cx_cut);
         if numX == 0
@@ -741,6 +741,7 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; per
             vvec_flat = vvec_full;
         end
 
+        print(xpos_flat, "\t", vvec_flat, "\n")
 
         rmag = sqrt.(sum(xpos_flat .^ 2, dims=2));
         indx_r_cut = rmag .> rNS;
