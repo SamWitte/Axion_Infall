@@ -742,7 +742,7 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; per
             vvec_flat = vvec_full;
         end
 
-        print(xpos_flat, "\t", vvec_flat, "\n")
+        # print(xpos_flat, "\t", vvec_flat, "\n")
 
         rmag = sqrt.(sum(xpos_flat .^ 2, dims=2));
         indx_r_cut = rmag .> rNS;
