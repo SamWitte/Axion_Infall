@@ -980,7 +980,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         end
         density_enhancement = 2 ./ sqrt.(π) .* (vmag ./ c_km) ./ vel_disp # unitless
         
-        sln_prob = weight_angle .* phaseS .* density_enhancement .* c_km ; # photons / second
+        sln_prob = weight_angle .* (vmag ./ c_km) .* phaseS .* density_enhancement .* c_km ; # photons / second
 
         
         sln_k = k_init;
