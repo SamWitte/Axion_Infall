@@ -913,7 +913,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
         # add random vel dispersion to NS_vel
 
-        vel_disp = sqrt.(GNew .* M_MC ./ R_MC) ./ c_km # km
+        vel_disp = sqrt.(2 .* GNew .* M_MC ./ R_MC) ./ c_km # dimensionless
         vel = zeros(length(rmag)*2, 3)
         for i in 1:length(rmag)
 
@@ -968,7 +968,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         # Prob = π ./ 2.0 .* (1e-12 .* B_tot).^2 .* (1 .+ vmag_tot.^2) .* sin.(acos.(cθ)) .^2 .* pref1  .* cLen ./ (vmag_tot .^2 .* pref2.^2) ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2 ; # g [1e-12 GeV^-1], unitless
         
         Prob = π ./ 2 .* (Ax_g .* B_tot ./ sin.(acos.(cθ))) .^2 ./ conversion_F .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5) .^2 ./ ((2.998e5 .* 6.58e-16) .^2) ./ sin.(acos.(cθ)).^2; #unitless
-
+        
         phaseS = (π .* maxR .* R_sampleFull .* 2) .* 1.0 .* Prob ./ Mass_a .* 1e9 .* (1e5).^3  # 1 / km
         if trace_trajs
             nsteps = 1000;
@@ -978,9 +978,9 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
             NumerP = [ln_tstart, ln_tend, ode_err]
             xF_AX, vF_AX = RT.propagateAxion(xpos_stacked, newV, nsteps, NumerP);
         end
-        density_enhancement = 2 ./ sqrt.(π) .* vmag ./ vel_disp # unitless
+        density_enhancement = 2 ./ sqrt.(π) .* (vmag ./ c_km) ./ vel_disp # unitless
         
-        sln_prob = weight_angle .* phaseS .* density_enhancement .* 2.998e5 ; # photons / second
+        sln_prob = weight_angle .* phaseS .* density_enhancement .* c_km ; # photons / second
 
         
         sln_k = k_init;
@@ -1012,6 +1012,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         
         
         opticalDepth = RT.tau_cyc(xF, kF, ttΔω, passA, Mass_a);
+        
         
         num_photons = length(ϕf)
         passA2 = [func_use, MagnetoVars, Mass_a];
