@@ -3,7 +3,8 @@ import numpy as np
 def AMC_CrossingTime(b, M, v_NS, rho_amc):
     # assume b [km], M [solar mass], v_NS [vector unitless]
     R_amc = (3*M / (4*np.pi * rho_amc))**(1/3) * 3.086*10**13 #	km
-    delD = np.sqrt(R_amc**2 - b**2)  # b in km
+    bnorm = np.sqrt(np.sum(b**2))
+    delD = np.sqrt(R_amc**2 - bnorm**2)  # b in km
     return 2 * delD / np.sqrt(np.sum(v_NS**2)) / 2.998e5 # s
 
 def AMC_profile(r, M, rho_amc):
@@ -26,24 +27,27 @@ def AMC_profile(r, M, rho_amc):
 
 def AMC_DensityEval(b, M, v_NS, t, rho_amc):
     R_amc = (3*M / (4*np.pi * rho_amc))**(1/3) * 3.086*10**13 #	km
-    delD = np.sqrt(R_amc**2 - b**2)  # b in km
+    bnorm = np.sqrt(np.sum(b**2))
+    delD = np.sqrt(R_amc**2 - bnorm**2)  # b in km
     vel = np.sqrt(np.sum(v_NS**2)) * 2.998e5
-    r = np.sqrt((delD - vel * t)**2 + b**2)
+    r = np.sqrt((delD - vel * t)**2 + bnorm**2)
     density = AMC_profile(r, M, rho_amc)
     return density
     
     
 def Transient_Time(b, r_amc, v_NS):
     # assume b [km], v_NS [vector unitless], rmac km
-    delD = np.sqrt(r_amc**2 - b**2)  # b in km
+    bnorm = np.sqrt(np.sum(b**2))
+    delD = np.sqrt(r_amc**2 - bnorm**2)  # b in km
     return 2 * delD / v_NS / 2.998e5 # s
 
 def Transient_AMC_DensityEval(b, r_amc, rho_amc, v_NS, t, nfw=True):
     # t in s
-    delD = np.sqrt(r_amc**2 - b**2)  # b in km
+    bnorm = np.sqrt(np.sum(b**2))
+    delD = np.sqrt(r_amc**2 - bnorm**2)  # b in km
     vel = np.sqrt(np.sum(v_NS**2)) * 2.998e5 # km /s
     
-    r = np.sqrt((delD - vel * t)**2 + b**2)
+    r = np.sqrt((delD - vel * t)**2 + bnorm**2)
     density = transient_profile(r, r_amc, rho_amc, b, t, nfw=nfw)
     return density
 
@@ -88,10 +92,11 @@ def get_t0_point(fileN, b):
     NS_vel = np.array([np.sin(NS_vel_T), 0.0, np.cos(NS_vel_T)]) * NS_vel_M * 2.998e5 # km /s
     NS_hat = np.array([np.sin(NS_vel_T), 0.0, np.cos(NS_vel_T)])
     z_comp = -np.sin(NS_vel_T) / np.cos(NS_vel_T)
-    perp_vec = np.array([1.0, 1.0, z_comp])
-    perp_vec /= np.sqrt(np.sum(perp_vec**2))
+    # perp_vec = np.array([1.0, 1.0, z_comp])
+    # perp_vec /= np.sqrt(np.sum(perp_vec**2))
     
-    init_pos = perp_vec * b # km
+    # init_pos = perp_vec * b # km
+    init_pos = b
     
     fileData = np.load(fileN)
     
