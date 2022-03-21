@@ -1059,8 +1059,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
     SaveAll[:,6] ./= float(f_inx); # divide off by N trajectories sampled
 
     fileN = dir_tag*"/Minicluster__MassAx_"*string(Mass_a);
-    fileN *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(ωPul)*"_B0_"*string(B0)*"_rNS_";
-    fileN *= string(rNS)*"_MassNS_"*string(Mass_NS);
+    fileN *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(round(ωPul, digits=3))*"_B0_"*string(B0)*"_rNS_";
+    fileN *= string(rNS)*"_MassNS_"*string(Mass_NS)*"_Ntrajs_"*string(Ntajs);
     fileN *= "_NS_Mag_"*string(round(NS_vel_M, digits=5))*"_NS_Theta_"*string(round(NS_vel_T, digits=3))
     fileN *= "_Mmc_"*string(M_MC)*"_Rmc_"*string(R_MC)*"_"
     fileN *= "_"*file_tag*"_.npz";
