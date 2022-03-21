@@ -809,7 +809,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
     func_use = RT.ωNR_e
 
-    NS_vel = [sin.(NS_vel_T) 0.0 cos.(NS_vel_T)] .* NS_vel_M;
+    NS_vel = [0.0 sin.(NS_vel_T) cos.(NS_vel_T)] .* NS_vel_M;
 
 
     # one time run --- time can be reduced in RayTracer.jl file by reducing sampling
