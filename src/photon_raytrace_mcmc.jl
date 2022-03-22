@@ -174,7 +174,7 @@ function solve_vel_CS(θ, ϕ, r, NS_vel; guess=[0.1 0.1 0.1], errV=1e-24)
     # FF2 = zeros(3)
     # f!(FF, soln.zero)
     # f!(FF2, -soln.zero)
-    # print(FF,"\t",FF2,"\n")
+    # print(FF,"\n")
     return soln.zero
 end
 
@@ -598,7 +598,6 @@ function dk_ds(x0, k0, Mvars)
         shat = R * Bhat[i, :];
         dkdr_proj_s[i] = abs.(sum(shat .* dkdr_grd[i]));
         
-        # print("test 1 \t", sum(shat .* Bhat[i,:]), "\t",   sum(shat .* uhat), "\t",  sum(shat .* khat[i,:]) , "\t",  sum(shat2 .* Bhat[i,:]), "\t",   sum(shat2 .* uhat),"\t", sum(shat2 .* khat[i,:]), "\n")
     end
     # dkdr_proj = abs.(sum(k0 .* dkdr_grd, dims=2) ./ sqrt.(sum(k0 .^ 2, dims=2)))
     return dkdr_proj_s
@@ -863,7 +862,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         vNS_phi = atan.(v_NS[2], v_NS[1]);
     end
 
-    vGu = 0.3 # guess point
+    vGu = 0.5 # guess point
 
     # define time at which we find crossings
     t0_ax = zeros(batchsize);
@@ -917,11 +916,13 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         vel = zeros(length(rmag)*2, 3)
         for i in 1:length(rmag)
 
-            NS_vel_guess = NS_vel .+ erfinv.(2 .* rand(1, 3) .- 1.0) .* vel_disp
-            velV = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_guess, guess=[vGu vGu vGu], errV=errSlve)
-            velV2 = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_guess, guess=[-vGu -vGu -vGu], errV=errSlve)
+            # NS_vel_guess = NS_vel .+ erfinv.(2 .* rand(1, 3) .- 1.0) .* vel_disp
+            velV = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel, guess=[vGu vGu vGu], errV=errSlve)
+            velV2 = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel, guess=[-vGu -vGu -vGu], errV=errSlve)
+            
             vel[i, :] = velV
             vel[i+length(rmag), :] = velV2
+            
         end
         # stack results
         xpos_stacked = cat(xpos_flat, xpos_flat, dims=1)
@@ -932,7 +933,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         mcmc_weightsFull = cat(mcmc_weights, mcmc_weights, dims=1)
 
 
-        vmag = sqrt.(2 * 132698000000.0 .* Mass_NS ./ rmag) ; # km/s
+        vmag = sqrt.(sum(vel.^2, dims=2)) .* c_km ; # km/s
         erg_ax = sqrt.( Mass_a^2 .+ (Mass_a .* vmag / 2.998e5) .^2 );
         ωpL = RT.GJ_Model_ωp_vec(xpos_stacked, t0_full, θm, ωPul, B0, rNS)
         newV = vel ./ sqrt.(sum(vel.^2, dims=2))
@@ -945,10 +946,10 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
        
         cθ = sum(newV .* Bvec, dims=2) ./ Bmag
-        vIfty = erfinv.(2 .* rand(length(vmag), 3) .- 1.0) .* vmean_ax .+ v_NS # km /s
+        vIfty = ones(length(vmag), 3) .* v_NS # km /s
         
         vel_eng = sum((vIfty ./ 2.998e5).^ 2, dims = 2) ./ 2;
-        vmag_tot = sqrt.(vmag .^ 2 .+ sum(vIfty .^ 2, dims = 2) ); # km/s
+        vmag_tot = vmag; # km/s
         k_init_ax = Mass_a .* newV .* (vmag_tot ./ 2.998e5);
 
         erg_ax = sqrt.(sum(k_init_ax .^2, dims=2) .+ Mass_a .^2);
@@ -973,10 +974,15 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         if trace_trajs
             nsteps = 1000;
             ln_tstart=-15;
-            ln_tend=5;
+            ln_tend=10;
             ode_err=1e-10;
+            thresh = 0.0001;
             NumerP = [ln_tstart, ln_tend, ode_err]
-            xF_AX, vF_AX = RT.propagateAxion(xpos_stacked, newV, nsteps, NumerP);
+            xF_AX, vF_AX = RT.propagateAxion(xpos_stacked, vel, nsteps, NumerP);
+            # indx_check = [sqrt.(sum((vF_AX[i, :, end] .- NS_vel) .^ 2)) .< thresh for i in 1:length(xpos_stacked[:,1])]
+            # indx_check = [sqrt.(sum((vF_AX[i, :, end] .- NS_vel) .^ 2))  for i in 1:length(xpos_stacked[:,1])]
+            # print(indx_check)
+                
         end
         density_enhancement = 2 ./ sqrt.(π) .* (vmag ./ c_km) ./ vel_disp # unitless
         
