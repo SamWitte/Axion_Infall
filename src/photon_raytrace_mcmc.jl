@@ -1002,14 +1002,14 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
         B_tot = sqrt.(sum(Bvec .^ 2, dims=2)) .* (1.95e-20) ; # GeV^2
         
-        MagnetoVars =  [θm, ωPul, B0, rNS, [1.0 1.0], t_in, erg]
+        MagnetoVars =  [θm, ωPul, B0, rNS, [1.0 1.0], times_pts, erg]
         sln_δk = RT.dk_ds(x_in, kini, [func_use, MagnetoVars]);
         conversion_F = sln_δk ./  (6.58e-16 .* 2.998e5) # 1/km^2;
         
         # sln_δk_a = RT.dwds_abs_vec(x_in, kini, [func_use, MagnetoVars]);
         # conversion_F_a = sln_δk_a ./  (6.58e-16 .* 2.998e5) # 1/km^2;
         
-        MagnetoVars =  [θm, ωPul, B0, rNS, [1.0 1.0], t_in]
+        MagnetoVars =  [θm, ωPul, B0, rNS, [1.0 1.0], times_pts]
         Prob = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ conversion_F .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5) .^2 ./ ((2.998e5 .* 6.58e-16) .^2) ./ sin.(acos.(cθ)).^4; #unitless
         # prob_alx = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ conversion_F_a .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5)  ./ ((2.998e5 .* 6.58e-16) .^2) ./ sin.(acos.(cθ)).^2; #unitless
         # print(prob ./ prob_alx, "\t", prob2 ./ prob_alx, "\n")
