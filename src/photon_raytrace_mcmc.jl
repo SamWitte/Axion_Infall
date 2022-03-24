@@ -1002,7 +1002,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
         B_tot = sqrt.(sum(Bvec .^ 2, dims=2)) .* (1.95e-20) ; # GeV^2
         
-        MagnetoVars =  [θm, ωPul, B0, rNS, [1.0 1.0], times_pts, erg_ax]
+        MagnetoVars =  [θm, ωPul, B0, rNS, [1.0 1.0], t0_full, erg_ax]
         sln_δk = RT.dk_ds(xpos_stacked, k_init, [func_use, MagnetoVars]);
         conversion_F = sln_δk ./  (6.58e-16 .* 2.998e5) # 1/km^2;
         
