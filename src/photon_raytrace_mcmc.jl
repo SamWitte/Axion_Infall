@@ -567,21 +567,24 @@ function ωNR_e(x, k, t, θm, ωPul, B0, rNS, gammaF)
 end
 
 
-function dk_dl(x0, k0, Mvars)
+function dk_dl(x0, k0, Mvars; flat=true)
     ω, Mvars2 = Mvars
-    θm, ωPul, B0, rNS, gammaF, t_start = Mvars2
-    ωErg = ω(x0, k0, t_start, θm, ωPul, B0, rNS, gammaF)
-    dkdr_grd = grad(kNR_e(seed(x0), k0, ωErg, t_start, θm, ωPul, B0, rNS, gammaF))
+    θm, ωPul, B0, rNS, gammaF, t_start, erg = Mvars2
     
-    dkdr_proj = abs.(sum(k0 .* dkdr_grd, dims=2) ./ sqrt.(sum(k0 .^ 2, dims=2)))
-    return dkdr_proj
+    ωErg = ω(x0, k0, t_start, θm, ωPul, B0, rNS, gammaF);
+    dkdr_grd = grad(kNR_e(seed(x0), k0, erg, t_start, θm, ωPul, B0, rNS, gammaF))
+    
+    #dkdr_proj = abs.(sum(k0 .* dkdr_grd, dims=2) ./ sqrt.(sum(k0 .^ 2, dims=2)))
+    dkdr_proj = (sum(k0 .* dkdr_grd, dims=2) ./ sqrt.(sum(k0 .^ 2, dims=2)))
+    return abs.(dkdr_proj)
 end
 
 function dk_ds(x0, k0, Mvars)
     ω, Mvars2 = Mvars
-    θm, ωPul, B0, rNS, gammaF, t_start = Mvars2
-    ωErg = ω(x0, k0, t_start, θm, ωPul, B0, rNS, gammaF)
+    θm, ωPul, B0, rNS, gammaF, t_start, ωErg = Mvars2
+    
     dkdr_grd = grad(kNR_e(seed(x0), k0, ωErg, t_start, θm, ωPul, B0, rNS, gammaF))
+    
     Bvec, ωpL = GJ_Model_vec(x0, t_start, θm, ωPul, B0, rNS)
     
     kmag = sqrt.(sum(k0 .* k0, dims=2))
@@ -595,12 +598,52 @@ function dk_ds(x0, k0, Mvars)
         uvec = [k0[i,2] .* Bvec[i,3] - Bvec[i,2] .* k0[i,3],  k0[i,3] .* Bvec[i,1] - Bvec[i,3] .* k0[i,1], k0[i,1] .* Bvec[i,2] - Bvec[i,1] .* k0[i,2]] ./ Bmag[i] ./ kmag[i]
         uhat = uvec ./ sqrt.(sum(uvec .^ 2));
         R = [uhat[1].^2 uhat[1] .* uhat[2] .+ uhat[3] uhat[1] .* uhat[3] .- uhat[2]; uhat[1] .* uhat[2] .- uhat[3] uhat[2].^2 uhat[2] .* uhat[3] .+ uhat[1]; uhat[1].*uhat[3] .+ uhat[2] uhat[2].*uhat[3] .- uhat[1] uhat[3].^2];
-        shat = R * Bhat[i, :];
-        dkdr_proj_s[i] = abs.(sum(shat .* dkdr_grd[i]));
+        # shat = R * Bhat[i, :];
+        yhat = R * khat[i, :];
+        
+        # dkdr_proj_s[i] = abs.(sum(shat .* dkdr_grd[i, :]));
+        dkdz = (sum(khat[i, :] .* dkdr_grd[i, :]));
+        dkdy = (sum(yhat .* dkdr_grd[i, :]));
+        dkdr_proj_s[i] = (dkdz .+ dkdy .* sin.(acos.(cθ[i])).^2 .* ωpL[i].^2 ./ (ωErg[i].^2 .- ωpL[i].^2 .* cθ[i].^2) ./ tan.(acos.(cθ[i])))
         
     end
-    # dkdr_proj = abs.(sum(k0 .* dkdr_grd, dims=2) ./ sqrt.(sum(k0 .^ 2, dims=2)))
-    return dkdr_proj_s
+    
+    return abs.(dkdr_proj_s)
+end
+
+
+function dwds_abs_vec(x0, k0, Mvars)
+    ω, Mvars2 = Mvars
+    θm, ωPul, B0, rNS, gammaF, t_start, ωErg = Mvars2
+    dωdr_grd = grad(GJ_Model_ωp_vec(seed(x0), t_start, θm, ωPul, B0, rNS))
+    Bvec, ωpL = GJ_Model_vec(x0, t_start, θm, ωPul, B0, rNS)
+    
+    
+    kmag = sqrt.(sum(k0 .* k0, dims=2))
+    Bmag = sqrt.(sum(Bvec .* Bvec, dims=2))
+    cθ = sum(k0 .* Bvec, dims=2) ./ (kmag .* Bmag)
+    khat = k0 ./ kmag
+    Bhat = Bvec ./ Bmag
+    
+    
+    dkdr_proj_s = zeros(length(k0[:, 1]));
+    for i in 1:length(k0[:,1])
+        uvec = [k0[i,2] .* Bvec[i,3] - Bvec[i,2] .* k0[i,3],  k0[i,3] .* Bvec[i,1] - Bvec[i,3] .* k0[i,1], k0[i,1] .* Bvec[i,2] - Bvec[i,1] .* k0[i,2]] ./ Bmag[i] ./ kmag[i]
+        uhat = uvec ./ sqrt.(sum(uvec .^ 2));
+        R = [uhat[1].^2 uhat[1] .* uhat[2] .+ uhat[3] uhat[1] .* uhat[3] .- uhat[2]; uhat[1] .* uhat[2] .- uhat[3] uhat[2].^2 uhat[2] .* uhat[3] .+ uhat[1]; uhat[1].*uhat[3] .+ uhat[2] uhat[2].*uhat[3] .- uhat[1] uhat[3].^2];
+        shat = R * Bhat[i, :];
+        yhat = R * khat[i, :];
+        
+        
+        dkdz = sum(khat[i,:] .* dωdr_grd[i, :]);
+        dkdy = sum(yhat .* dωdr_grd[i, :]);
+    
+        dkdr_proj_s[i] = (dkdz .+ dkdy .* sin.(acos.(cθ[i])).^2 .* ωpL[i].^2 ./ (ωErg[i].^2 .- ωpL[i].^2 .* cθ[i].^2) ./ tan.(acos.(cθ[i])))
+
+    end
+
+    return abs.(dkdr_proj_s)
+
 end
 
 function dk_dlS(x0, k0, Mvars)
@@ -958,17 +1001,18 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
 
         B_tot = sqrt.(sum(Bvec .^ 2, dims=2)) .* (1.95e-20) ; # GeV^2
-        MagnetoVars =  [θm, ωPul, B0, rNS, gammaF, t0_full]
         
-
-        sln_δk = RT.dk_ds(xpos_stacked, k_init, [func_use, MagnetoVars]);
+        MagnetoVars =  [θm, ωPul, B0, rNS, [1.0 1.0], t_in, erg]
+        sln_δk = RT.dk_ds(x_in, kini, [func_use, MagnetoVars]);
         conversion_F = sln_δk ./  (6.58e-16 .* 2.998e5) # 1/km^2;
-
-        # pref1 = 1 .+ (ωp.^4 .* cθ.^2 .* sin.(acos.(cθ)) .^2) ./ (Mass_a.^2 .* (1 .+ vmag_tot.^2) .- ωp.^2 .* cθ.^2).^2;
-        # pref2 = (ωp.^2 .* cθ.^2) ./ (Mass_a.^2 .*  (1 .+ vmag_tot.^2)) .- 1;
-        # Prob = π ./ 2.0 .* (1e-12 .* B_tot).^2 .* (1 .+ vmag_tot.^2) .* sin.(acos.(cθ)) .^2 .* pref1  .* cLen ./ (vmag_tot .^2 .* pref2.^2) ./ (2.998e5 .* 6.58e-16 ./ 1e9).^2 ; # g [1e-12 GeV^-1], unitless
         
-        Prob = π ./ 2 .* (Ax_g .* B_tot ./ sin.(acos.(cθ))) .^2 ./ conversion_F .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5) .^2 ./ ((2.998e5 .* 6.58e-16) .^2) ./ sin.(acos.(cθ)).^2; #unitless
+        # sln_δk_a = RT.dwds_abs_vec(x_in, kini, [func_use, MagnetoVars]);
+        # conversion_F_a = sln_δk_a ./  (6.58e-16 .* 2.998e5) # 1/km^2;
+        
+        MagnetoVars =  [θm, ωPul, B0, rNS, [1.0 1.0], t_in]
+        Prob = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ conversion_F .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5) .^2 ./ ((2.998e5 .* 6.58e-16) .^2) ./ sin.(acos.(cθ)).^4; #unitless
+        # prob_alx = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ conversion_F_a .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5)  ./ ((2.998e5 .* 6.58e-16) .^2) ./ sin.(acos.(cθ)).^2; #unitless
+        # print(prob ./ prob_alx, "\t", prob2 ./ prob_alx, "\n")
         
         phaseS = (π .* maxR .* R_sampleFull .* 2) .* 1.0 .* Prob ./ Mass_a .* 1e9 .* (1e5).^3  # 1 / km
         if trace_trajs
