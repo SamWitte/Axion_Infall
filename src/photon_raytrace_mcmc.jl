@@ -646,15 +646,6 @@ function dwds_abs_vec(x0, k0, Mvars)
 
 end
 
-function dk_dlS(x0, k0, Mvars)
-    ω, Mvars2 = Mvars
-    θm, ωPul, B0, rNS, gammaF, t_start = Mvars2
-    ωErg = ω(x0, k0, t_start, θm, ωPul, B0, rNS, gammaF)
-    dkdr_grd = grad(ksimple(seed(x0), k0, ωErg, t_start, θm, ωPul, B0, rNS, gammaF))
-    
-    dkdr_proj = abs.(sum(k0 .* dkdr_grd, dims=2) ./ sqrt.(sum(k0 .^ 2, dims=2)))
-    return dkdr_proj
-end
 
 
 function kNR_e(x, k, ω, t, θm, ωPul, B0, rNS, gammaF)
@@ -1030,7 +1021,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         end
         density_enhancement = 2 ./ sqrt.(π) .* (vmag ./ c_km) ./ vel_disp # unitless
         
-        sln_prob = weight_angle .* (vmag ./ c_km) .* phaseS .* density_enhancement .* c_km ; # photons / second
+        sln_prob = weight_angle .* (vmag ./ c_km) .* phaseS .* density_enhancement .* c_km .* mcmc_weights ; # photons / second
 
         
         sln_k = k_init;
