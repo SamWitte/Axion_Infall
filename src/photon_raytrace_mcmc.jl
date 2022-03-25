@@ -963,6 +963,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         rmag = cat(rmag, rmag, dims=1)
 
         R_sampleFull = cat(R_sample, R_sample, dims=1)
+        
         t0_full = cat(times_pts, times_pts, dims=1)
         mcmc_weightsFull = cat(mcmc_weights, mcmc_weights, dims=1)
 
@@ -1021,7 +1022,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         end
         density_enhancement = 2 ./ sqrt.(π) .* (vmag ./ c_km) ./ vel_disp # unitless
         
-        sln_prob = weight_angle .* (vmag ./ c_km) .* phaseS .* density_enhancement .* c_km .* mcmc_weights ; # photons / second
+        sln_prob = weight_angle .* (vmag ./ c_km) .* phaseS .* density_enhancement .* c_km .* mcmc_weightsFull ; # photons / second
 
         
         sln_k = k_init;
