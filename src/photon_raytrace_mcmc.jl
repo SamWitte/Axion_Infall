@@ -950,9 +950,9 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         vel = zeros(length(rmag)*2, 3)
         for i in 1:length(rmag)
 
-            # NS_vel_guess = NS_vel .+ erfinv.(2 .* rand(1, 3) .- 1.0) .* vel_disp
-            velV = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel, guess=[vGu vGu vGu], errV=errSlve)
-            velV2 = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel, guess=[-vGu -vGu -vGu], errV=errSlve)
+            NS_vel_guess = NS_vel .+ erfinv.(2 .* rand(1, 3) .- 1.0) .* vel_disp
+            velV = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_guess, guess=[vGu vGu vGu], errV=errSlve)
+            velV2 = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_guess, guess=[-vGu -vGu -vGu], errV=errSlve)
             
             vel[i, :] = velV
             vel[i+length(rmag), :] = velV2
