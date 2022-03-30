@@ -906,6 +906,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
     times_pts = zeros(batchsize);
     filled_positions = false;
     fill_indx = 1;
+    Ncx_max = 1;
 
 
     while photon_trajs < desired_trajs
@@ -923,6 +924,10 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
             # for i in 1:1
             for i in 1:numV # Keep more?
+                if weights[i] .> Ncx_max
+                    Ncx_max = numV[i]
+                end
+                
                 if fill_indx <= batchsize
 
                     xpos_flat[fill_indx, :] .= xv[i, :];
@@ -930,6 +935,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
                     mcmc_weights[fill_indx] = weights[i];
                     times_pts[fill_indx] = times_eval[i];
                     fill_indx += 1
+                    f_inx += 1;
                 end
             end
 
@@ -1099,7 +1105,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
     # cut out unused elements
     SaveAll = SaveAll[SaveAll[:,6] .> 0, :];
-    SaveAll[:,6] ./= float(f_inx); # divide off by N trajectories sampled
+    SaveAll[:,6] ./= (float(f_inx) .* float(Ncx_max)); # divide off by N trajectories sampled
 
     fileN = dir_tag*"/Minicluster__MassAx_"*string(Mass_a);
     fileN *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(round(ωPul, digits=3))*"_B0_"*string(B0)*"_rNS_";
