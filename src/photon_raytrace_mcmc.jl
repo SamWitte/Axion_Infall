@@ -925,7 +925,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
             # for i in 1:1
             for i in 1:numV # Keep more?
                 if weights[i] .> Ncx_max
-                    Ncx_max = numV[i]
+                    Ncx_max = weights[i]
                 end
                 
                 if fill_indx <= batchsize
