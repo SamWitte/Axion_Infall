@@ -138,7 +138,7 @@ function propagateAxion(x0::Matrix, k0::Matrix, nsteps::Int, NumerP::Array)
     # u0 = cu([x0 k0])
     u0 = ([x0 k0])
 
-    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err*1e-3, abstol=ode_err, maxiters=1e7);
+    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=1e-12, abstol=1e-12, maxiters=1e7);
     # sol = solve(probAx, Tsit5(), saveat=saveat);
     # sol = solve(probAx, Vern6(), saveat=saveat)
     sol = solve(probAx, lsoda(), saveat=saveat)
@@ -1017,8 +1017,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         if trace_trajs
             nsteps = 1000;
             ln_tstart=-15;
-            ln_tend=10;
-            ode_err=1e-10;
+            ln_tend=20;
+            ode_err=1e-12;
             thresh = 0.0001;
             NumerP = [ln_tstart, ln_tend, ode_err]
             xF_AX, vF_AX = RT.propagateAxion(xpos_stacked, vel, nsteps, NumerP);
