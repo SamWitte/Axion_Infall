@@ -1113,16 +1113,19 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         sln_δk = RT.dk_ds(xpos_stacked, k_init, [func_use, MagnetoVars]);
         conversion_F = sln_δk ./  (6.58e-16 .* 2.998e5) # 1/km^2;
         
-        # sln_δk_a = RT.dwds_abs_vec(xpos_stacked, k_init, [func_use, MagnetoVars]);
-        # conversion_F_a = sln_δk_a ./  (6.58e-16 .* 2.998e5) # 1/km^2;
+        sln_δk_a = RT.dwds_abs_vec(xpos_stacked, k_init, [func_use, MagnetoVars]);
+        conversion_F_a = sln_δk_a ./  (6.58e-16 .* 2.998e5) # 1/km^2;
         
         MagnetoVars =  [θm, ωPul, B0, rNS, [1.0 1.0], times_pts]
-        Prob = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ conversion_F .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5) .^2 ./ ((2.998e5 .* 6.58e-16) .^2) ./ sin.(acos.(cθ)).^4; #unitless
+        mass_factor = sin.(acos.(cθ)).^2 ./ (sin.(acos.(cθ)).^2 .+ (vmag_tot ./ 2.998e5).^2).^2
+        prob_alx = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ abs.(conversion_F_a) .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5)  ./ ((2.998e5 .* 6.58e-16) .^2) .* mass_factor; #unitless
+        
+        # Prob = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ conversion_F .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5) .^2 ./ ((2.998e5 .* 6.58e-16) .^2) ./ sin.(acos.(cθ)).^4; #unitless
         # prob_alx = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ conversion_F_a .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5)  ./ ((2.998e5 .* 6.58e-16) .^2) ./ sin.(acos.(cθ)).^2; #unitless
         # print(prob ./ prob_alx, "\t", prob2 ./ prob_alx, "\n")
         
         # phaseS = (2 .* π .* maxR .* R_sampleFull .* 2) .* 1.0 .* Prob ./ Mass_a .* 1e9 .* (1e5).^3  # 1 / km
-        phaseS = (2 .* π .* maxR.^2) .* 1.0 .* Prob ./ Mass_a .* 1e9 .* (1e5).^3  # 1 / km
+        phaseS = (2 .* π .* maxR.^2) .* 1.0 .* prob_alx ./ Mass_a .* 1e9 .* (1e5).^3  # 1 / km
 
 
         # density_enhancement = 2 ./ sqrt.(π) .* (vmag ./ c_km) ./ vel_disp # unitless
