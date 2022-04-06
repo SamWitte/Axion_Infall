@@ -12,6 +12,7 @@ using ForwardDiff: gradient, derivative, Dual, Partials, hessian
 using OrdinaryDiffEq
 # using CuArrays
 using DifferentialEquations
+using LinearAlgebra: cross
 # using Plots
 using NLsolve
 using LSODA
@@ -97,14 +98,14 @@ function func_axion!(du, u, Mvars, lnt)
         r = sqrt.(sum(x .* x, dims=2))
 
         xhat = x ./ r
-        massL = ones(length(r))
-        if sum(r .< 10) > 0
-            massL[r .< 10] .= 1.0 .* (r[r .< 10] ./ 10.0) .^ 3;
-        end
+#        massL = ones(length(r))
+#        if sum(r .< 10) > 0
+#            massL[r .< 10] .= 1.0 .* (r[r .< 10] ./ 10.0) .^ 3;
+#        end
 
-        G = 132698000000.0 # km M_odot^-1 * (km/s)^2
-        du[:,1:3] = -v .* 2.998e5 .* t;  # v is km/s, x in km, t [s]
-        du[:,4:6] = G .* massL ./ r.^2 .* xhat ./ 2.998e5 .* t; # unitless, assume 1M NS
+        
+        du[:,1:3] = -v .* c_km .* t;  # v is km/s, x in km, t [s]
+        du[:,4:6] = GNew .* 1.0 ./ r.^2 .* xhat ./ c_km .* t; # unitless, assume 1M NS
     end
 end
 
@@ -138,7 +139,7 @@ function propagateAxion(x0::Matrix, k0::Matrix, nsteps::Int, NumerP::Array)
     # u0 = cu([x0 k0])
     u0 = ([x0 k0])
 
-    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=1e-12, abstol=1e-12, maxiters=1e7);
+    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err, abstol=ode_err, maxiters=1e7);
     # sol = solve(probAx, Tsit5(), saveat=saveat);
     # sol = solve(probAx, Vern6(), saveat=saveat)
     sol = solve(probAx, lsoda(), saveat=saveat)
@@ -153,17 +154,17 @@ end
 
 function solve_vel_CS(θ, ϕ, r, NS_vel; guess=[0.1 0.1 0.1], errV=1e-24)
     ff = sum(NS_vel.^2); # unitless
-    G = 132698000000.0 # km M_odot^-1 * (km/s)^2
-    GMr = G ./ r ./ (2.998e5 .^ 2); # unitless
+    # G = 132698000000.0 # km M_odot^-1 * (km/s)^2
+    GMr = GNew ./ r ./ (c_km .^ 2); # unitless
     rhat = [sin.(θ) .* cos.(ϕ) sin.(θ) .* sin.(ϕ) cos.(θ)]
 
     function f!(F, x)
         vx, vy, vz = x
         denom = ff .+ GMr .- sqrt.(ff) .* sum(x .* rhat);
 
-        F[1] = (ff .* vx .+ sqrt.(ff) .* GMr .* rhat[1] .- sqrt.(ff) .* vx .* sum(x .* rhat)) ./ denom .- NS_vel[1]
-        F[2] = (ff .* vy .+ sqrt.(ff) .* GMr .* rhat[2] .- sqrt.(ff) .* vy .* sum(x .* rhat)) ./ denom .- NS_vel[2]
-        F[3] = (ff .* vz .+ sqrt.(ff) .* GMr .* rhat[3] .- sqrt.(ff) .* vz .* sum(x .* rhat)) ./ denom .- NS_vel[3]
+        F[1] = (ff .* vx .+ sqrt.(ff) .* GMr .* rhat[1] .- sqrt.(ff) .* vx .* sum(x .* rhat)) ./ (NS_vel[1] .* denom) .- 1.0
+        F[2] = (ff .* vy .+ sqrt.(ff) .* GMr .* rhat[2] .- sqrt.(ff) .* vy .* sum(x .* rhat)) ./ (NS_vel[2] .* denom) .- 1.0
+        F[3] = (ff .* vz .+ sqrt.(ff) .* GMr .* rhat[3] .- sqrt.(ff) .* vz .* sum(x .* rhat)) ./ (NS_vel[3] .* denom) .- 1.0
         # print(F[1], "\t",F[2], "\t", F[3],"\n")
         # print(θ, "\t", ϕ,"\t", r, "\n")
     end
@@ -171,29 +172,39 @@ function solve_vel_CS(θ, ϕ, r, NS_vel; guess=[0.1 0.1 0.1], errV=1e-24)
     soln = nlsolve(f!, guess, autodiff = :forward, ftol=errV, iterations=10000)
 
     # FF = zeros(3)
-    # FF2 = zeros(3)
     # f!(FF, soln.zero)
-    # f!(FF2, -soln.zero)
-    # print(FF,"\n")
+    # print("accuracy... ", FF,"\n")
     return soln.zero
 end
 
-function jacobian_Lville(θ, ϕ, r, NS_vel, v_surf)
-    ff = sum(NS_vel.^2); # unitless
-    GM = 132698000000.0 ./ (2.998e5 .^ 2) # km
-    GMr = GM ./ r ; # unitless
-    rhat = [sin.(θ) .* cos.(ϕ) sin.(θ) .* sin.(ϕ) cos.(θ)]
-    vx, vy, vz = v_surf
-    dvx_vx = 1.0 .+ GM .* (-GM .- ff .* r .+ sqrt.(ff) .* r .* (vz .* sin.(θ) .* cos.(ϕ).^2 .+ vy .* sin.(ϕ))) ./ (GM .+ ff.*r .- sqrt.(ff).*r .* (vz .* cos.(θ) .+ sin.(θ) .* (vx .* cos.(ϕ) .+ vy .* sin.(ϕ)) )).^2
-    dvy_vy_numer_1 = ((sqrt.(ff) .- vz .* cos.(θ) .- vx.*sin.(θ).*cos.(ϕ)) .* (GM .+ ff .* r .- sqrt.(ff).*r .* (vz .* cos.(θ) .+ vx .* sin.(θ) .* cos.(ϕ))) );
-    dvy_vy_numer_2 = 2 .* vy .* sin.(θ) .* (-GM .- ff .* r .+ sqrt.(ff) .* r .* (vz .* cos.(θ) .+ vx .* sin.(θ) .* cos.(ϕ))) .* sin.(ϕ) .+ sqrt.(ff) .* (GM .+ r .* vy.^2).*sin.(ϕ).^2 .* sin.(θ).^2;
-    dvy_vy_numer = sqrt.(ff).*r.*(dvy_vy_numer_1 .+ dvy_vy_numer_2);
-    dvy_vy_denom = (GM .+ ff.*r .- sqrt.(ff).*r .* (vz .* cos.(θ) .+ sin.(θ) .* (vx .* cos.(ϕ) .+ vy .* sin.(ϕ)) )).^2
-    dvy_vy = dvy_vy_numer / dvy_vy_denom;
-    dvz_vz = 1.0 .+ GM .* (-GM .- ff .* r .+ sqrt.(ff) .* r .* (vz .* sin.(θ) .* cos.(ϕ).^2 .+ vy .* sin.(ϕ))) ./ (GM .+ ff.*r .- sqrt.(ff).*r .* (vz .* cos.(θ) .+ sin.(θ) .* (vx .* cos.(ϕ) .+ vy .* sin.(ϕ)) )).^2
-    # print(abs.(dvx_vx).^(-1.0),"\t", abs.(dvy_vy).^(-1.0), "\t", abs.(dvz_vz).^(-1.0), "\t")
-    return abs.(dvx_vx).^(-1.0) .* abs.(dvy_vy).^(-1.0) .* abs.(dvz_vz).^(-1.0)
+function solve_Rinit(X_surf, NS_vel, vel_surf; guess=[0.1 0.1 0.1], errV=1e-10)
+    
+
+    L_surf = [X_surf[2] .* vel_surf[3] .- vel_surf[2] .* X_surf[3] X_surf[3] .* vel_surf[1] .- vel_surf[3] .* X_surf[1] X_surf[1] .* vel_surf[2] .- vel_surf[1] .* X_surf[2]]
+    L_surf_mag = sqrt.(sum(L_surf.^2))
+    function f!(F, x)
+        L_far = [x[2] .* NS_vel[3] .- NS_vel[2] .* x[3] x[3] .* NS_vel[1] .- NS_vel[3] .* x[1] x[1] .* NS_vel[2] .- NS_vel[1] .* x[2]]
+        x_mag = sqrt.(sum(x .^2))
+        # F[1] = L_far[1] ./ L_surf[1] .- 1.0
+        # F[2] = L_far[2] ./ L_surf[2] .- 1.0
+        # F[3] = L_far[3] ./ L_surf[3] .- 1.0
+        F[1] = sqrt.(sum(L_far.^2)) ./ L_surf_mag .- 1.0
+        F[2] = sum(L_surf .* L_far) ./ (L_surf_mag .* sqrt.(sum(L_far.^2))) .- 1.0
+        F[3] = x_mag ./ 8e12 .- 1.0
+    end
+
+    soln = nlsolve(f!, guess, autodiff = :forward, ftol=errV, iterations=10000)
+
+    # FF = zeros(3)
+    # f!(FF, soln.zero)
+    L_far = [soln.zero[2] .* NS_vel[3] .- NS_vel[2] .* soln.zero[3] soln.zero[3] .* NS_vel[1] .- NS_vel[3] .* soln.zero[1] soln.zero[1] .* NS_vel[2] .- NS_vel[1] .* soln.zero[2]]
+    # print("TEST>>>> ", L_far ./ L_surf .- 1.0, "\n")
+    # dist = sqrt.(sum(soln.zero.^2))
+    # print("TEST>>>> ", dist, "\n")
+    # print("accuracy... ", FF,"\n")
+    return soln.zero
 end
+
 
 function test_vs_soln(θ, ϕ, r, NS_vel, x)
     ff = sum(NS_vel.^2); # unitless
@@ -691,7 +702,7 @@ function ωGam(x, k, t, θm, ωPul, B0, rNS, gammaF)
     return ω_final
 end
 
-function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; period_average=false)
+function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; period_average=false, n_max=8)
     batchsize = 2;
     if period_average
         times_eval = rand(batchsize) .* (2π ./ ωPul)
@@ -709,8 +720,8 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; per
     vvec_all = [sin.(θi) .* cos.(ϕi) sin.(θi) .* sin.(ϕi) cos.(θi)];
     # randomly sample x1 and x2 (rotated vectors in disk perpendicular to (r=1, θ, ϕ) with max radius R)
     ϕRND = rand(batchsize) .* 2π;
-    # rRND = sqrt.(rand(batchsize)) .* maxR; standard flat sampling
-    rRND = rand(batchsize) .* maxR; # New 1/r sampling
+    rRND = sqrt.(rand(batchsize)) .* maxR; # standard flat sampling
+    # rRND = rand(batchsize) .* maxR; # New 1/r sampling
     x1 = rRND .* cos.(ϕRND);
     x2 = rRND .* sin.(ϕRND);
     # rotate using Inv[EurlerMatrix(ϕi, θi, 0)] on vector (x1, x2, 0)
@@ -720,11 +731,16 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; per
     cxing_st = [get_crossings(log.(GJ_Model_ωp_vec(x_axion[i], times_eval[i], θm, ωPul, B0, rNS)) .- log.(Mass_a)) for i in 1:batchsize];
     cxing = [apply(cxing_st[i], tt_ax) for i in 1:batchsize];
     # see if any crossings
-    indx_cx = [if length(cxing[i]) .> 0 i else -1 end for i in 1:batchsize];
+    randInx = [rand(1:n_max) for i in 1:batchsize];
+    
+    # see if keep any crossings
+    indx_cx = [if length(cxing[i]) .>= randInx[i] i else -1 end for i in 1:batchsize];
+    
+    # indx_cx = [if length(cxing[i]) .> 0 i else -1 end for i in 1:batchsize];
+
     # remove those which dont
+    randInx = randInx[indx_cx .> 0];
     indx_cx_cut = indx_cx[indx_cx .> 0];
-    # assign index for random point selection
-    randInx = [rand(1:length(cxing[indx_cx_cut][i])) for i in 1:length(indx_cx_cut)];
     cxing_short = [cxing[indx_cx_cut][i][randInx[i]] for i in 1:length(indx_cx_cut)];
     weights = [length(cxing[indx_cx_cut][i]) for i in 1:length(indx_cx_cut)];
 
@@ -826,7 +842,7 @@ end
 
 
 
-function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, batchsize; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], errSlve=1e-10, period_average=false, M_MC=1e-12, R_MC=1.0e9,  save_more=true, vmean_ax=220.0, ntimes_ax=10000, dir_tag="results", trace_trajs=false)
+function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, batchsize; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], errSlve=1e-10, period_average=false, M_MC=1e-12, R_MC=1.0e9,  save_more=true, vmean_ax=220.0, ntimes_ax=10000, dir_tag="results", trace_trajs=false, n_maxSample=8)
 
     # pass parameters
     # axion mass [eV], axion-photon coupling [1/GeV], misalignment angle (rot-B field) [rad], rotational freq pulars [1/s]
@@ -843,12 +859,16 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
     func_use = RT.ωNR_e
 
     NS_vel = [0.0 sin.(NS_vel_T) cos.(NS_vel_T)] .* NS_vel_M;
+    
 
 
     # one time run --- time can be reduced in RayTracer.jl file by reducing sampling
     # cannot run this with a non-GJ model for time being (but works for relativistic plasmas as well)....
     maxR = RT.Find_Conversion_Surface(Mass_a, fix_time, θm, ωPul, B0, rNS, 1, false)
-
+    
+    # br_max = sqrt.(2 * GNew .* Mass_NS .* maxR) ./ (NS_vel_M .* c_km) # km
+    br_max = 2 * R_MC;
+    
     maxR_tag = "";
 
     if maxR < rNS
@@ -862,7 +882,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
     desired_trajs = Ntajs
     # assumes desired_trajs large!
     save_more=true;
-    SaveAll = zeros(desired_trajs * 2, 21);
+    SaveAll = zeros(desired_trajs * 2, 24);
     f_inx = 0;
 
 
@@ -907,34 +927,32 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
     filled_positions = false;
     fill_indx = 1;
     Ncx_max = 1;
+    count_success = 0;
 
 
     while photon_trajs < desired_trajs
 
         while !filled_positions
 
-            xv, Rv, numV, weights, times_eval = RT.find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS, period_average=period_average)
-            # print(xv, "\t", times_eval, "\n")
-            # count sample
+            xv, Rv, numV, weights, times_eval = RT.find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS, period_average=period_average, n_max=n_maxSample)
+
             f_inx += 2;
 
             if numV == 0
                 continue
             end
 
-            # for i in 1:1
             for i in 1:numV # Keep more?
-                if weights[i] .> Ncx_max
-                    Ncx_max = weights[i]
-                end
+                f_inx -= 1
                 
                 if fill_indx <= batchsize
 
                     xpos_flat[fill_indx, :] .= xv[i, :];
                     R_sample[fill_indx] = Rv[i];
-                    mcmc_weights[fill_indx] = weights[i];
+                    mcmc_weights[fill_indx] = n_maxSample;
                     times_pts[fill_indx] = times_eval[i];
                     fill_indx += 1
+                    
                     
                 end
             end
@@ -942,7 +960,6 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
             if fill_indx > batchsize
                 filled_positions = true
                 fill_indx = 1
-                f_inx -= 1;
             end
         end
         filled_positions = false;
@@ -950,30 +967,119 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         rmag = sqrt.(sum(xpos_flat .^ 2, dims=2));
         ϕ = atan.(view(xpos_flat, :, 2), view(xpos_flat, :, 1))
         θ = acos.(view(xpos_flat, :, 3)./ rmag)
+    
 
         # add random vel dispersion to NS_vel
 
         vel_disp = sqrt.(2 .* GNew .* M_MC ./ R_MC) ./ c_km # dimensionless
+        # print("vel disp... ", vel_disp, "\n")
         vel = zeros(length(rmag)*2, 3)
+        vF_AX = zeros(length(rmag)*2, 3)
+        xF_AX = zeros(length(rmag)*2, 3)
+        
         for i in 1:length(rmag)
-
-            NS_vel_guess = NS_vel .+ erfinv.(2 .* rand(1, 3) .- 1.0) .* vel_disp
-            velV = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_guess, guess=[vGu vGu vGu], errV=errSlve)
-            velV2 = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_guess, guess=[-vGu -vGu -vGu], errV=errSlve)
             
+            v_perturb = erfinv.(2 .* rand(1, 3) .- 1.0) .* vel_disp
+            # v_perp = v_perturb .- sum(v_perturb .* NS_vel) ./ sum(NS_vel.^2) .* NS_vel
+            NS_vel_p = NS_vel .+ v_perturb
+            vF_AX[i, :] = NS_vel_p;
+            
+#            time0=Dates.now()
+            vGu = sqrt.(2 .* GNew .* Mass_NS ./ rmag[i]) ./ 2.998e5;
+            
+            velV = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_p, guess=[vGu vGu vGu], errV=errSlve)
             vel[i, :] = velV
-            vel[i+length(rmag), :] = velV2
             
+            
+            xF_AX[i, :] = RT.solve_Rinit(xpos_flat[i, :], NS_vel_p, velV; guess=[0.0 -8e13 0.0], errV=1e-10)
+            xF_AX[i+length(rmag), :] = xF_AX[i, :]
+            # print("R_far \t", r_far, "\n")
+            
+            sameVs = true
+            cnt_careful= 0
+            while sameVs
+                randARR = float(rand(-1:2:1, 3))
+
+                # vGuess = [vGu .* randARR[1] vGu .* randARR[2] vGu .* randARR[3]]
+                vGuess = [rand() .* randARR[1] rand() .* randARR[2] rand() .* randARR[3]]
+                
+                velV2 = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_p, guess=vGuess, errV=errSlve)
+                
+                if velV2 != velV
+                    sameVs = false
+                    vel[i+length(rmag), :] = velV2
+                end
+                cnt_careful += 1
+                if cnt_careful > 50
+                    print("failing here....")
+                    break;
+                end
+            end
+            
+    
         end
+        
         # stack results
         xpos_stacked = cat(xpos_flat, xpos_flat, dims=1)
         rmag = cat(rmag, rmag, dims=1)
-
         R_sampleFull = cat(R_sample, R_sample, dims=1)
-        
         t0_full = cat(times_pts, times_pts, dims=1)
         mcmc_weightsFull = cat(mcmc_weights, mcmc_weights, dims=1)
+        
+        # b = sqrt.(sum(vel.^2, dims=2)) .* rmag ./ (NS_vel_M)
+        
+        
+        if trace_trajs
+            nsteps = 1000;
+            ln_tstart=-15;
+            # later define equal to roche radius
+            ln_tend=24.44;
+ 
+#            xF_AX = RT.solve_Rinit(xpos_flat, vF_AX, vel; guess=[0.0 -8e13 0.0], errV=1e-10)
+#            print(xF_AX, "\n")
+#            ode_err=1e-12;
+#            NumerP = [ln_tstart, ln_tend, ode_err]
+#            time0=Dates.now()
+#            xF_AX, vF_AX = RT.propagateAxion(xpos_stacked, vel, nsteps, NumerP);
+#            print("Xend \t", xF_AX[:, :, end], "\n")
+#            time1=Dates.now()
+#            print("time diff: ", time1-time0, "\n")
+            final_dist = sqrt.(sum(xF_AX .^2, dims=2));
+            xFNorm = xF_AX ./ final_dist;
+            # print(xFNorm, "\n")
+            theta_real = acos.(abs.(sum(xFNorm .* (NS_vel ./ NS_vel_M), dims=2)));
+            
+            # theta_max = asin.(br_max ./ final_dist)
+            theta_max = asin.(br_max ./ 8e12)
+            
+            cut_trajs = [if abs.(theta_real[i]) .<= abs.(theta_max) i else -1 end for i in 1:length(theta_real)];
+            f_inx += sum(cut_trajs .<= 0);
+            cut_trajs = cut_trajs[cut_trajs .> 0];
+            
+            
+            # print(length(xpos_stacked[:,1]), "\t", length(cut_trajs), "\t", theta_real .* 180 ./ 3.14, "\t", asin.(br_max ./ 8e12) .* 180 ./ 3.14,  "\n")
+        end
+        
+        
+        if length(cut_trajs) == 0
+            continue
+        end
+        
+        count_success += length(cut_trajs)
+        # print("success: ", count_success, " total \t", f_inx, "\n")
+        
+        xpos_stacked = xpos_stacked[cut_trajs, :];
+        vel = vel[cut_trajs, :];
+        rmag = rmag[cut_trajs]
+        R_sampleFull = R_sampleFull[cut_trajs]
+        t0_full = t0_full[cut_trajs]
+        mcmc_weightsFull = mcmc_weightsFull[cut_trajs]
+        xF_AX = xF_AX[cut_trajs, :];
+        vF_AX = vF_AX[cut_trajs, :];
+        
+        
 
+        # print(xpos_stacked, "\t", t0_full, "\n")
 
         vmag = sqrt.(sum(vel.^2, dims=2)) .* c_km ; # km/s
         erg_ax = sqrt.( Mass_a^2 .+ (Mass_a .* vmag / 2.998e5) .^2 );
@@ -1013,21 +1119,12 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         # prob_alx = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ conversion_F_a .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5)  ./ ((2.998e5 .* 6.58e-16) .^2) ./ sin.(acos.(cθ)).^2; #unitless
         # print(prob ./ prob_alx, "\t", prob2 ./ prob_alx, "\n")
         
-        phaseS = (π .* maxR .* R_sampleFull .* 2) .* 1.0 .* Prob ./ Mass_a .* 1e9 .* (1e5).^3  # 1 / km
-        if trace_trajs
-            nsteps = 1000;
-            ln_tstart=-15;
-            ln_tend=20;
-            ode_err=1e-12;
-            thresh = 0.0001;
-            NumerP = [ln_tstart, ln_tend, ode_err]
-            xF_AX, vF_AX = RT.propagateAxion(xpos_stacked, vel, nsteps, NumerP);
-            # indx_check = [sqrt.(sum((vF_AX[i, :, end] .- NS_vel) .^ 2)) .< thresh for i in 1:length(xpos_stacked[:,1])]
-            # indx_check = [sqrt.(sum((vF_AX[i, :, end] .- NS_vel) .^ 2))  for i in 1:length(xpos_stacked[:,1])]
-            # print(indx_check)
-                
-        end
+        # phaseS = (2 .* π .* maxR .* R_sampleFull .* 2) .* 1.0 .* Prob ./ Mass_a .* 1e9 .* (1e5).^3  # 1 / km
+        phaseS = (2 .* π .* maxR.^2) .* 1.0 .* Prob ./ Mass_a .* 1e9 .* (1e5).^3  # 1 / km
+
+
         density_enhancement = 2 ./ sqrt.(π) .* (vmag ./ c_km) ./ vel_disp # unitless
+        # density_enhancement = 1.0;
         
         sln_prob = weight_angle .* (vmag ./ c_km) .* phaseS .* density_enhancement .* c_km .* mcmc_weightsFull ; # photons / second
 
@@ -1095,9 +1192,12 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 18] .= calpha[:]; # surf norm
 
         if trace_trajs
-            SaveAll[photon_trajs:photon_trajs + num_photons - 1, 19] .= xF_AX[:, 1, end]; #
-            SaveAll[photon_trajs:photon_trajs + num_photons - 1, 20] .= xF_AX[:, 2, end]; #
-            SaveAll[photon_trajs:photon_trajs + num_photons - 1, 21] .= xF_AX[:, 3, end]; #
+            SaveAll[photon_trajs:photon_trajs + num_photons - 1, 19] .= xF_AX[:, 1]; #
+            SaveAll[photon_trajs:photon_trajs + num_photons - 1, 20] .= xF_AX[:, 2]; #
+            SaveAll[photon_trajs:photon_trajs + num_photons - 1, 21] .= xF_AX[:, 3]; #
+            SaveAll[photon_trajs:photon_trajs + num_photons - 1, 22] .= vF_AX[:, 1]; #
+            SaveAll[photon_trajs:photon_trajs + num_photons - 1, 23] .= vF_AX[:, 2]; #
+            SaveAll[photon_trajs:photon_trajs + num_photons - 1, 24] .= vF_AX[:, 3]; #
         end
 
         photon_trajs += num_photons;
