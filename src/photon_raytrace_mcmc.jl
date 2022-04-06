@@ -990,10 +990,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
             velV = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_p, guess=[vGu vGu vGu], errV=errSlve)
             vel[i, :] = velV
             
+  
             
-            xF_AX[i, :] = RT.solve_Rinit(xpos_flat[i, :], NS_vel_p, velV; guess=[0.0 -8e13 0.0], errV=1e-10)
-            xF_AX[i+length(rmag), :] = xF_AX[i, :]
-            # print("R_far \t", r_far, "\n")
             
             sameVs = true
             cnt_careful= 0
@@ -1016,6 +1014,10 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
                 end
             end
             
+            xF_AX[i, :] = RT.solve_Rinit(xpos_flat[i, :], NS_vel_p, velV; guess=[0.0 -8e13 0.0], errV=1e-10)
+            xF_AX[i+length(rmag), :] = RT.solve_Rinit(xpos_flat[i, :], NS_vel_p, vel[i+length(rmag), :]; guess=[0.0 -8e13 0.0], errV=1e-10)
+             
+         
     
         end
         
@@ -1123,8 +1125,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         phaseS = (2 .* π .* maxR.^2) .* 1.0 .* Prob ./ Mass_a .* 1e9 .* (1e5).^3  # 1 / km
 
 
-        density_enhancement = 2 ./ sqrt.(π) .* (vmag ./ c_km) ./ vel_disp # unitless
-        # density_enhancement = 1.0;
+        # density_enhancement = 2 ./ sqrt.(π) .* (vmag ./ c_km) ./ vel_disp # unitless
+        density_enhancement = 1.0;
         
         sln_prob = weight_angle .* (vmag ./ c_km) .* phaseS .* density_enhancement .* c_km .* mcmc_weightsFull ; # photons / second
 
@@ -1206,7 +1208,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
     # cut out unused elements
     SaveAll = SaveAll[SaveAll[:,6] .> 0, :];
-    SaveAll[:,6] ./= (float(f_inx) .* float(Ncx_max)); # divide off by N trajectories sampled
+    SaveAll[:,6] ./= (float(f_inx)); # divide off by N trajectories sampled
 
     fileN = dir_tag*"/Minicluster__MassAx_"*string(Mass_a);
     fileN *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(round(ωPul, digits=3))*"_B0_"*string(B0)*"_rNS_";
