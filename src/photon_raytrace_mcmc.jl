@@ -1193,7 +1193,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 14] .= sln_k[:, 3]; # initial kz
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 15] .= opticalDepth[:]; # optical depth
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 16] .= weightC[:]; # optical depth
-        SaveAll[photon_trajs:photon_trajs + num_photons - 1, 17] .= Prob[:]; # optical depth
+        SaveAll[photon_trajs:photon_trajs + num_photons - 1, 17] .= prob_alx[:]; # optical depth
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 18] .= calpha[:]; # surf norm
 
         if trace_trajs
