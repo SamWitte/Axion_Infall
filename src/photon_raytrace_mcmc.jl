@@ -220,13 +220,14 @@ function solve_Rinit(X_surf, NS_vel, vel_surf; guess=[0.1 0.1 0.1], errV=1e-10, 
     L_surf_mag = sqrt.(sum(L_surf.^2))
     function f!(F, x)
         L_far = [x[2] .* NS_vel[3] .- NS_vel[2] .* x[3] x[3] .* NS_vel[1] .- NS_vel[3] .* x[1] x[1] .* NS_vel[2] .- NS_vel[1] .* x[2]]
-        x_mag = sqrt.(sum(x .^2))
+        # x_mag = sqrt.(sum(x .^2))
+        x_proj = sum(x .* (- NS_vel) ./ sqrt.(sum(NS_vel.^2)))
         # F[1] = L_far[1] ./ L_surf[1] .- 1.0
         # F[2] = L_far[2] ./ L_surf[2] .- 1.0
         # F[3] = L_far[3] ./ L_surf[3] .- 1.0
         F[1] = sqrt.(sum(L_far.^2)) ./ L_surf_mag .- 1.0
         F[2] = sum(L_surf .* L_far) ./ (L_surf_mag .* sqrt.(sum(L_far.^2))) .- 1.0
-        F[3] = x_mag ./ Roche_R .- 1.0
+        F[3] = x_proj ./ Roche_R .- 1.0
     end
 
     soln = nlsolve(f!, guess, autodiff = :forward, ftol=errV, iterations=10000)
