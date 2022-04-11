@@ -152,10 +152,10 @@ function propagateAxion(x0::Matrix, k0::Matrix, nsteps::Int, NumerP::Array)
 
 end
 
-function solve_vel_CS(θ, ϕ, r, NS_vel; guess=[0.1 0.1 0.1], errV=1e-24)
+function solve_vel_CS(θ, ϕ, r, NS_vel; guess=[0.1 0.1 0.1], errV=1e-24, Mass_NS=1)
     ff = sum(NS_vel.^2); # unitless
     
-    GMr = GNew ./ r ./ (c_km .^ 2); # unitless
+    GMr = GNew .* Mass_NS ./ r ./ (c_km .^ 2); # unitless
     rhat = [sin.(θ) .* cos.(ϕ) sin.(θ) .* sin.(ϕ) cos.(θ)]
 
     function f!(F, x)
@@ -178,15 +178,15 @@ function solve_vel_CS(θ, ϕ, r, NS_vel; guess=[0.1 0.1 0.1], errV=1e-24)
     return soln.zero
 end
 
-function jacobian_fv(x_in, vel_loc)
+function jacobian_fv(x_in, vel_loc, mag_v_inf)
 
     rmag = sqrt.(sum(x_in.^2));
     ϕ = atan.(x_in[2], x_in[1])
     θ = acos.(x_in[3] ./ rmag)
 
-    dvXi_dV = grad(v_infinity(θ, ϕ, rmag, seed(vel_loc), v_comp=1));
-    dvYi_dV = grad(v_infinity(θ, ϕ, rmag, seed(vel_loc), v_comp=2));
-    dvZi_dV = grad(v_infinity(θ, ϕ, rmag, seed(vel_loc), v_comp=3));
+    dvXi_dV = grad(v_infinity(θ, ϕ, rmag, seed(vel_loc), mag_v_inf, v_comp=1));
+    dvYi_dV = grad(v_infinity(θ, ϕ, rmag, seed(vel_loc), mag_v_inf, v_comp=2));
+    dvZi_dV = grad(v_infinity(θ, ϕ, rmag, seed(vel_loc), mag_v_inf, v_comp=3));
     
     
     JJ = det([dvXi_dV; dvYi_dV; dvZi_dV])
@@ -194,11 +194,12 @@ function jacobian_fv(x_in, vel_loc)
     return abs.(JJ).^(-1)
 end
 
-function v_infinity(θ, ϕ, r, vel_loc; v_comp=1)
+function v_infinity(θ, ϕ, r, vel_loc, mag_v_inf; v_comp=1, Mass_NS=1)
     vx, vy, vz = vel_loc
     vel_loc_mag = sqrt.(sum(vel_loc.^2))
-    GMr = GNew ./ r ./ (c_km .^ 2); # unitless
-    v_inf = sqrt.(vel_loc_mag.^2 .- 2 .* GMr); # unitless
+    GMr = GNew .* Mass_NS ./ r ./ (c_km .^ 2); # unitless
+    
+    v_inf = mag_v_inf; # unitless
     rhat = [sin.(θ) .* cos.(ϕ) sin.(θ) .* sin.(ϕ) cos.(θ)]
     
     denom = v_inf.^2 .+ GMr .- v_inf .* sum(vel_loc .* rhat);
@@ -1075,7 +1076,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
         # add random vel dispersion to NS_vel
 
-        vel_disp = 1e-2 # sqrt.(2 .* GNew .* M_MC ./ R_MC) ./ c_km  # dimensionless
+        vel_disp = sqrt.(2 .* GNew .* M_MC ./ R_MC) ./ c_km  # dimensionless
         # print("vel disp... ", vel_disp, "\n")
         vel = zeros(length(rmag)*2, 3)
         vF_AX = zeros(length(rmag)*2, 3)
@@ -1090,28 +1091,30 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
             vF_AX[i, :] = NS_vel_p;
             
 #            time0=Dates.now()
-            vGu = sqrt.(2 .* GNew .* Mass_NS ./ rmag[i]) ./ 2.998e5;
+            vGu = sqrt.(2 .* GNew .* Mass_NS ./ rmag[i]) ./ 2.998e5 .* 1.1;
             
             velV = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_p, guess=[vGu vGu vGu], errV=errSlve)
             vel[i, :] = velV
             
+            
+            mag_v_inf = sqrt.(sum(NS_vel_p.^2));
             # print(sqrt.(sum(v_perturb.^2)), "\t", sqrt.(sum(velV.^2)), "\t", RT.jacobian_fv(xpos_flat[i, :], velV), "\n")
-            mcmc_weightsFull[i] *= RT.jacobian_fv(xpos_flat[i, :], velV)
+            mcmc_weightsFull[i] *= RT.jacobian_fv(xpos_flat[i, :], velV, mag_v_inf)
             
             sameVs = true
             cnt_careful= 0
             while sameVs
                 randARR = float(rand(-1:2:1, 3))
 
-                # vGuess = [vGu .* randARR[1] vGu .* randARR[2] vGu .* randARR[3]]
-                vGuess = [rand() .* randARR[1] rand() .* randARR[2] rand() .* randARR[3]]
+                vGuess = [vGu .* randARR[1] vGu .* randARR[2] vGu .* randARR[3]]
+                # vGuess = [rand() .* randARR[1] rand() .* randARR[2] rand() .* randARR[3]]
                 
                 velV2 = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_p, guess=vGuess, errV=errSlve)
                 
                 if velV2 != velV
                     sameVs = false
                     vel[i+length(rmag), :] = velV2
-                    mcmc_weightsFull[i+length(rmag)] *= RT.jacobian_fv(xpos_flat[i, :], velV2)
+                    mcmc_weightsFull[i+length(rmag)] *= RT.jacobian_fv(xpos_flat[i, :], velV2, mag_v_inf)
                 end
                 cnt_careful += 1
                 if cnt_careful > 50
@@ -1222,25 +1225,25 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         
         sln_δk_millar = RT.test_dw_millar(xpos_stacked, k_init, [func_use, MagnetoVars]);
         conversion_F_Millar = sln_δk_millar ./  (6.58e-16 .* 2.998e5) # 1/km^2;
-        print(conversion_F_a ./ conversion_F_Millar, "\n\n")
+        # print(conversion_F_a ./ conversion_F_Millar, "\n\n")
         
         MagnetoVars =  [θm, ωPul, B0, rNS, [1.0 1.0], times_pts]
         mass_factor = sin.(acos.(cθ)).^2 ./ (sin.(acos.(cθ)).^2 .+ (vmag_tot ./ 2.998e5).^2).^2
         prob_alx = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ abs.(conversion_F_a) .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5)  ./ ((2.998e5 .* 6.58e-16) .^2) .* mass_factor; #unitless
         
         
-        kk = Mass_a .* (vmag_tot ./ 2.998e5)
-        xi = sin.(acos.(cθ)).^2 ./ (1.0 .- ωp.^2 ./ erg_ax.^2 .* cθ.^2)
-        prob_millar =  π ./ 2 .* (Ax_g .* B_tot) .^2 ./ abs.(conversion_F_Millar) .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5)  ./ ((2.998e5 .* 6.58e-16) .^2) .* mass_factor .* (kk ./ xi).^(-1); #unitless
+        # kk = Mass_a .* (vmag_tot ./ 2.998e5)
+        # xi = sin.(acos.(cθ)).^2 ./ (1.0 .- ωp.^2 ./ erg_ax.^2 .* cθ.^2)
+        # prob_millar =  π ./ 2 .* (Ax_g .* B_tot) .^2 ./ abs.(conversion_F_Millar) .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5)  ./ ((2.998e5 .* 6.58e-16) .^2) .* mass_factor .* (xi .* ωp ./ kk); #unitless
         
         Prob = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ conversion_F .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5) .^2 ./ ((2.998e5 .* 6.58e-16) .^2) ./ sin.(acos.(cθ)).^4; #unitless
         # prob_alx = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ conversion_F_a .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5)  ./ ((2.998e5 .* 6.58e-16) .^2) ./ sin.(acos.(cθ)).^2; #unitless
         # print(prob ./ prob_alx, "\t", prob2 ./ prob_alx, "\n")
-        print(abs.(conversion_F_a) ./ abs.(conversion_F_Millar), "\n")
+        # print(abs.(conversion_F_a) ./ abs.(conversion_F_Millar), "\n")
         # print(prob_alx ./ prob_millar, "\t", Prob ./ prob_millar, "\n")
         
         # phaseS = (2 .* π .* maxR .* R_sampleFull .* 2) .* 1.0 .* Prob ./ Mass_a .* 1e9 .* (1e5).^3  # 1 / km
-        phaseS = (2 .* π .* maxR.^2) .* 1.0 .* prob_alx ./ Mass_a .* 1e9 .* (1e5).^3  # 1 / km
+        phaseS = (2 .* π .* maxR.^2) .* 1.0 .* Prob ./ Mass_a .* 1e9 .* (1e5).^3  # 1 / km
 
 
         # density_enhancement = 2 ./ sqrt.(π) .* (vmag ./ c_km) ./ vel_disp # unitless
@@ -1308,7 +1311,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 14] .= sln_k[:, 3]; # initial kz
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 15] .= opticalDepth[:]; # optical depth
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 16] .= weightC[:]; # optical depth
-        SaveAll[photon_trajs:photon_trajs + num_photons - 1, 17] .= prob_alx[:]; # optical depth
+        SaveAll[photon_trajs:photon_trajs + num_photons - 1, 17] .= Prob[:]; # optical depth
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 18] .= calpha[:]; # surf norm
 
         if trace_trajs
