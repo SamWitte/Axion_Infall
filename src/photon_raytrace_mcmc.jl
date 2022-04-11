@@ -1246,11 +1246,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         # phaseS = (2 .* π .* maxR .* R_sampleFull .* 2) .* 1.0 .* Prob ./ Mass_a .* 1e9 .* (1e5).^3  # 1 / km
         phaseS = (2 .* π .* maxR.^2) .* 1.0 .* Prob ./ Mass_a .* 1e9 .* (1e5).^3  # 1 / km
 
-
-        # density_enhancement = 2 ./ sqrt.(π) .* (vmag ./ c_km) ./ vel_disp # unitless
-        density_enhancement = 1.0;
         
-        sln_prob = weight_angle .* (vmag ./ c_km) .* phaseS .* density_enhancement .* c_km .* mcmc_weightsFull ; # photons / second
+        sln_prob = weight_angle .* (vmag ./ c_km) .* phaseS .* c_km .* mcmc_weightsFull ; # photons / second
 
         
         sln_k = k_init;
