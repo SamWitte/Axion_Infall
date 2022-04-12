@@ -79,50 +79,56 @@ def get_NS_vel(fileN):
     fnm2 = fileN.find("_NS_Theta_")
     fnm3 = fileN.find("_Mmc_")
     fnm4 = fileN.find("_Rmc_")
-    fnm5 = fileN.find("___fixed_time")
+    fnm5 = fileN.find("___")
+    
+        
     NS_vel_M = float(fileN[fnm1 + len("_NS_Mag_"): fnm2])
     NS_vel_T = float(fileN[fnm2 + len("_NS_Theta_"): fnm3])
     MMc = float(fileN[fnm3 + len("_Mmc_"): fnm4])
     R_amc = float(fileN[fnm4 + len("_Rmc_"): fnm5])
     return NS_vel_T, NS_vel_M, MMc, R_amc
 
-def get_t0_point(fileN, b):
+def get_t0_point(fileN, b, NS_vel_T_true):
     # b impact param [km]
     NS_vel_T, NS_vel_M, Mmc, R_amc = get_NS_vel(fileN)
-    NS_vel = np.array([np.sin(NS_vel_T), 0.0, np.cos(NS_vel_T)]) * NS_vel_M * 2.998e5 # km /s
-    NS_hat = np.array([np.sin(NS_vel_T), 0.0, np.cos(NS_vel_T)])
-    z_comp = -np.sin(NS_vel_T) / np.cos(NS_vel_T)
+    NS_vel = np.array([0.0, np.sin(NS_vel_T_true), np.cos(NS_vel_T_true)]) * NS_vel_M * 2.998e5 # km /s
+    NS_hat = np.array([0.0, np.sin(NS_vel_T_true), np.cos(NS_vel_T_true)])
+    
+    Mass_NS = 1.0
+    Roche_R = R_amc * (2 * Mass_NS / Mmc)**(1.0 / 3.0)
+    # print(Roche_R)
+    # z_comp = -np.sin(NS_vel_T) / np.cos(NS_vel_T)
     # perp_vec = np.array([1.0, 1.0, z_comp])
     # perp_vec /= np.sqrt(np.sum(perp_vec**2))
     
-    # init_pos = perp_vec * b # km
-    init_pos = b
+    # initial position of center of AMC at initial infall
+    init_pos = b + (-NS_hat) * Roche_R
     
     fileData = np.load(fileN)
-    
-    
-    dist_from_center = fileData[:, 18:] + init_pos
-    dist_proj_vel = np.dot(dist_from_center, -NS_hat) + R_amc
-    
-    closet_to_earth = np.argmin(np.sqrt(np.sum(fileData[:, 18:]**2, axis=1)))
-    
-    eff_time = ((np.max(dist_proj_vel) )/ (NS_vel_M * 2.998e5))  # s
-    dist_proj =  + -NS_vel * eff_time # * eff_time_list[np.argmin(rad_dist)]
-    return init_pos, dist_proj, NS_vel, Mmc, R_amc, fileData
+    rel_dist = np.sqrt(np.sum((init_pos - fileData[:,18:18+3])**2, axis=1))
+    # dist_from_center = fileData[:, 18:18+3] + init_pos
+    # dist_proj_vel = np.dot(dist_from_center, -NS_hat) + R_amc
+    # closet_to_earth = np.argmin(np.sqrt(np.sum(fileData[:, 18:18+3]**2, axis=1)))
+    # eff_time = ((np.max(dist_proj_vel) )/ (NS_vel_M * 2.998e5))  # s
+    # dist_proj_vel =  + -NS_vel * eff_time # * eff_time_list[np.argmin(rad_dist)]
+    # return init_pos, dist_proj_vel, NS_vel, Mmc, R_amc, fileData
+    return init_pos, rel_dist, Mmc, R_amc, fileData
 
-def eval_density_3d(fileN, b, t):
+def eval_density_3d(fileN, b, t, NS_Vel_T):
     # given input file and impact parameter, return density-weighted raytracer output at time t
     # t [s]
-    init_pos, dist_proj, NS_vel, Mmc, R_amc, fileData = get_t0_point(fileN, b)
-    newDist_c = dist_proj + NS_vel * t
     
-    dist_from_center = fileData[:, 18:] + init_pos
-    
-    rad_dist = np.sqrt(np.sum((dist_from_center - newDist_c)**2, axis=1)) # km
+    # init_pos, dist_proj, NS_vel, Mmc, R_amc, fileData = get_t0_point(fileN, b)
+    # newDist_c = dist_proj - NS_vel * t
+    # dist_from_center = fileData[:, 18:18+3] + init_pos
+    init_pos, rel_dist, Mmc, R_amc, fileData = get_t0_point(fileN, b, NS_Vel_T)
+    # print(init_pos, rel_dist)
+    # rad_dist = np.sqrt(np.sum((dist_from_center - newDist_c)**2, axis=1)) # km
+    # print(init_pos, dist_from_center, newDist_c, rad_dist)
     # print(np.min(rad_dist) / R_amc, np.max(rad_dist) / R_amc)
     rho_amc = (3*Mmc / (4*np.pi * (R_amc / 3.086e13)**3))  #
     
-    den = AMC_profile(rad_dist, Mmc, rho_amc)
-    fileData[:, 5] *= den # properly re-weight density terms
+    den = AMC_profile(rel_dist, Mmc, rho_amc)
+    # fileData[:, 5] *= den # properly re-weight density terms
     return fileData, den
 
