@@ -959,7 +959,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
     # rhoDM -- this is asymptotic density. currently scaled to 1 GeV / cm^3
 
-
+    accur_threshold = 1e-6;
     RT = RayTracer; # define ray tracer module
 
     func_use = RT.ωNR_e
@@ -1096,13 +1096,12 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
             # vGu = 0.9
             
             
-            # OCASIONAL FAIL!
             found = false
             cnt_careful= 0
             while !found
                 vGu = rand()
                 velV, accur = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_p, guess=[vGu vGu vGu], errV=errSlve)
-                if accur .< 1e-4
+                if accur .< accur_threshold
                     vel[i, :] = velV
                     mcmc_weightsFull[i] *= RT.jacobian_fv(xpos_flat[i, :], velV)
                     found = true
@@ -1123,7 +1122,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
                 
                 velV2, accur = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_p, guess=vGuess, errV=errSlve)
                 
-                if (velV2 != vel[i, :])&&(accur .< 1e-4)
+                if (velV2 != vel[i, :])&&(accur .< accur_threshold)
                     found = true
                     vel[i+length(rmag), :] = velV2
                     mcmc_weightsFull[i+length(rmag)] *= RT.jacobian_fv(xpos_flat[i, :], velV2)
