@@ -1094,7 +1094,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 #            time0=Dates.now()
             # vGu = sqrt.(2 .* GNew .* Mass_NS ./ rmag[i]) ./ c_km .* 1.3;
             # vGu = 0.9
-            
+            fail_first = false
+            fail_second = false
             
             found = false
             cnt_careful= 0
@@ -1109,6 +1110,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
                 cnt_careful += 1
                 if cnt_careful > 50
                     print("failing here at pt 1....")
+                    mcmc_weightsFull[i] *= 0.0
                     break;
                 end
             end
@@ -1130,12 +1132,17 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
                 cnt_careful += 1
                 if cnt_careful > 50
                     print("failing here at pt 2....")
+                    mcmc_weightsFull[i+length(rmag)] *= 0.0
                     break;
                 end
             end
             
-            xF_AX[i, :] = RT.solve_Rinit(xpos_flat[i, :], NS_vel_p, vel[i, :]; guess=[0.0 -Roche_R 0.0], errV=1e-10, Roche_R=Roche_R)
-            xF_AX[i+length(rmag), :] = RT.solve_Rinit(xpos_flat[i, :], NS_vel_p, vel[i+length(rmag), :]; guess=[0.0 -Roche_R 0.0], errV=1e-10, Roche_R=Roche_R)
+            if !fail_first
+                xF_AX[i, :] = RT.solve_Rinit(xpos_flat[i, :], NS_vel_p, vel[i, :]; guess=[0.0 -Roche_R 0.0], errV=1e-10, Roche_R=Roche_R)
+            end
+            if !fail_second
+                xF_AX[i+length(rmag), :] = RT.solve_Rinit(xpos_flat[i, :], NS_vel_p, vel[i+length(rmag), :]; guess=[0.0 -Roche_R 0.0], errV=1e-10, Roche_R=Roche_R)
+            end
             
         end
         
