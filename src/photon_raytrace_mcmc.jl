@@ -1111,6 +1111,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
                 if cnt_careful > 50
                     print("failing here at pt 1....")
                     mcmc_weightsFull[i] *= 0.0
+                    fail_first = true
                     break;
                 end
             end
@@ -1133,6 +1134,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
                 if cnt_careful > 50
                     print("failing here at pt 2....")
                     mcmc_weightsFull[i+length(rmag)] *= 0.0
+                    fail_second = true
                     break;
                 end
             end
