@@ -948,7 +948,7 @@ end
 
 
 
-function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, batchsize; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], errSlve=1e-10, period_average=false, M_MC=1e-12, R_MC=1.0e9,  save_more=true, vmean_ax=220.0, ntimes_ax=10000, dir_tag="results", trace_trajs=false, n_maxSample=8)
+function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, batchsize; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], errSlve=1e-10, period_average=false, M_MC=1e-12, R_MC=1.0e9,  save_more=true, vmean_ax=220.0, ntimes_ax=10000, dir_tag="results", trace_trajs=false, n_maxSample=8, axion_star_nodisp=false)
 
     # pass parameters
     # axion mass [eV], axion-photon coupling [1/GeV], misalignment angle (rot-B field) [rad], rotational freq pulars [1/s]
@@ -1074,11 +1074,14 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         ϕ = atan.(view(xpos_flat, :, 2), view(xpos_flat, :, 1))
         θ = acos.(view(xpos_flat, :, 3)./ rmag)
     
-
+        
         # add random vel dispersion to NS_vel
-
         vel_disp = sqrt.(2 .* GNew .* M_MC ./ R_MC) ./ c_km  # dimensionless
-        # print("vel disp... ", vel_disp, "\n")
+        if axion_star_nodisp
+            vel_disp = 0.0
+        end
+        
+        
         vel = zeros(length(rmag)*2, 3)
         vF_AX = zeros(length(rmag)*2, 3)
         xF_AX = zeros(length(rmag)*2, 3)

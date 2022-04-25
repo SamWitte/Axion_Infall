@@ -112,7 +112,7 @@ def get_t0_point(fileN, b, NS_vel_T_true):
     # eff_time = ((np.max(dist_proj_vel) )/ (NS_vel_M * 2.998e5))  # s
     # dist_proj_vel =  + -NS_vel * eff_time # * eff_time_list[np.argmin(rad_dist)]
     # return init_pos, dist_proj_vel, NS_vel, Mmc, R_amc, fileData
-    return init_pos, rel_dist, Mmc, R_amc, fileData
+    return init_pos, rel_dist, NS_vel, Mmc, R_amc, fileData
 
 def eval_density_3d(fileN, b, t, NS_Vel_T):
     # given input file and impact parameter, return density-weighted raytracer output at time t
@@ -121,7 +121,11 @@ def eval_density_3d(fileN, b, t, NS_Vel_T):
     # init_pos, dist_proj, NS_vel, Mmc, R_amc, fileData = get_t0_point(fileN, b)
     # newDist_c = dist_proj - NS_vel * t
     # dist_from_center = fileData[:, 18:18+3] + init_pos
-    init_pos, rel_dist, Mmc, R_amc, fileData = get_t0_point(fileN, b, NS_Vel_T)
+    init_pos, rel_dist, NS_vel, Mmc, R_amc, fileData = get_t0_point(fileN, b, NS_Vel_T)
+    NS_mag = np.sqrt(np.sum(NS_vel**2))
+    rel_dist = np.sqrt(rel_dist**2 + (NS_mag * t)**2)
+    
+    
     # print(init_pos, rel_dist)
     # rad_dist = np.sqrt(np.sum((dist_from_center - newDist_c)**2, axis=1)) # km
     # print(init_pos, dist_from_center, newDist_c, rad_dist)
