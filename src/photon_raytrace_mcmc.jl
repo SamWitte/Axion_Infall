@@ -1077,9 +1077,6 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         
         # add random vel dispersion to NS_vel
         vel_disp = sqrt.(2 .* GNew .* M_MC ./ R_MC) ./ c_km  # dimensionless
-        if axion_star_moddisp
-            vel_disp = vel_disp .* 1e-1
-        end
         
         
         vel = zeros(length(rmag)*2, 3)
@@ -1088,9 +1085,12 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         mcmc_weightsFull = cat(mcmc_weights, mcmc_weights, dims=1)
         
         for i in 1:length(rmag)
+            if !axion_star_moddisp
+                v_perturb = erfinv.(2 .* rand(1, 3) .- 1.0) .* vel_disp
+            else
+                v_perturb = rand(1, 3) .* vel_disp
+            end
             
-            v_perturb = erfinv.(2 .* rand(1, 3) .- 1.0) .* vel_disp
-            # v_perp = v_perturb .- sum(v_perturb .* NS_vel) ./ sum(NS_vel.^2) .* NS_vel
             NS_vel_p = NS_vel .+ v_perturb
             vF_AX[i, :] = NS_vel_p;
             
