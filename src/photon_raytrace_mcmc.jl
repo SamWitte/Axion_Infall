@@ -1105,7 +1105,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
             while !found
                 vGu = rand()
                 velV, accur = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_p, guess=[vGu vGu vGu], errV=errSlve)
-                test_func = (velV2.^2 .- (2 .* GNew .* Mass_NS ./ r ./ (c_km .^ 2))); # unitless
+                test_func = (velV.^2 .- (2 .* GNew .* Mass_NS ./ r ./ (c_km .^ 2))); # unitless
                 if (accur .< accur_threshold)&&(test_func .> 0)
                     vel[i, :] = velV
                     mcmc_weightsFull[i] *= RT.jacobian_fv(xpos_flat[i, :], velV)
