@@ -226,9 +226,9 @@ function solve_Rinit(X_surf, NS_vel, vel_surf; guess=[0.1 0.1 0.1], errV=1e-10, 
         # F[2] = L_far[2] ./ L_surf[2] .- 1.0
         # F[3] = L_far[3] ./ L_surf[3] .- 1.0
         
-        # F[1] = sqrt.(sum(L_far.^2)) ./ L_surf_mag .- 1.0
-        # F[2] = sum(L_surf .* L_far) ./ (L_surf_mag .* sqrt.(sum(L_far.^2))) .- 1.0
-        # F[3] = x_proj ./ Roche_R .- 1.0
+        F[1] = sqrt.(sum(L_far.^2)) ./ L_surf_mag .- 1.0
+        F[2] = sum(L_surf .* L_far) ./ (L_surf_mag .* sqrt.(sum(L_far.^2))) .- 1.0
+        F[3] = x_proj ./ Roche_R .- 1.0
     end
 
     soln = nlsolve(f!, guess, autodiff = :forward, ftol=errV, iterations=10000)
