@@ -1258,14 +1258,15 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         
         MagnetoVars =  [θm, ωPul, B0, rNS, [1.0 1.0], times_pts]
         mass_factor = sin.(acos.(cθ)).^2 ./ (sin.(acos.(cθ)).^2 .+ (vmag_tot ./ 2.998e5).^2).^2
-        prob_alx = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ abs.(conversion_F_a) .* (1e9 .^2) ./ (vmag_tot ./ c_km)  ./ ((hbar .* c_km) .^2) .* mass_factor; #unitless
+        mass_factorR = 1 ./ (sin.(acos.(cθ)).^2 .+ (vmag_tot ./ 2.998e5).^2).^2
+        # prob_alx = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ abs.(conversion_F_a) .* (1e9 .^2) ./ (vmag_tot ./ c_km)  ./ ((hbar .* c_km) .^2) .* mass_factor; #unitless
         
         
         # kk = Mass_a .* (vmag_tot ./ c_km)
         # xi = sin.(acos.(cθ)).^2 ./ (1.0 .- ωp.^2 ./ erg_ax.^2 .* cθ.^2)
         # prob_millar =  π ./ 2 .* (Ax_g .* B_tot) .^2 ./ abs.(conversion_F_Millar) .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5)  ./ ((2.998e5 .* 6.58e-16) .^2) .* mass_factor .* (xi .* ωp ./ kk); #unitless
         
-        Prob = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ conversion_F .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5) .^2 ./ ((2.998e5 .* 6.58e-16) .^2) ./ sin.(acos.(cθ)).^4; #unitless
+        Prob = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ conversion_F .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5) .^2 ./ ((2.998e5 .* 6.58e-16) .^2) .* mass_factorR; #unitless
         # prob_alx = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ conversion_F_a .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5)  ./ ((2.998e5 .* 6.58e-16) .^2) ./ sin.(acos.(cθ)).^2; #unitless
         # print(prob ./ prob_alx, "\t", prob2 ./ prob_alx, "\n")
         # print(abs.(conversion_F_a) ./ abs.(conversion_F_Millar), "\n")
