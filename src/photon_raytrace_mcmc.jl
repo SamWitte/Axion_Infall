@@ -949,7 +949,7 @@ end
 
 
 
-function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, batchsize; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], errSlve=1e-10, period_average=false, M_MC=1e-12, R_MC=1.0e9,  save_more=true, vmean_ax=220.0, ntimes_ax=10000, dir_tag="results", trace_trajs=false, n_maxSample=8, axion_star_moddisp=false)
+function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, batchsize; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], errSlve=1e-10, period_average=false, M_MC=1e-12, R_MC=1.0e9,  save_more=true, vmean_ax=220.0, ntimes_ax=10000, dir_tag="results", trace_trajs=true, n_maxSample=8, axion_star_moddisp=false)
 
     # pass parameters
     # axion mass [eV], axion-photon coupling [1/GeV], misalignment angle (rot-B field) [rad], rotational freq pulars [1/s]
@@ -1089,7 +1089,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
             if !axion_star_moddisp
                 v_perturb = erfinv.(2 .* rand(1, 3) .- 1.0) .* vel_disp
             else
-                v_perturb = rand(1, 3) .* vel_disp
+                v_perturb = rand(1, 3) .* vel_disp ./ sqrt.(3)
             end
             
             NS_vel_p = NS_vel .+ v_perturb
