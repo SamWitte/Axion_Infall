@@ -960,7 +960,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
     # rhoDM -- this is asymptotic density. currently scaled to 1 GeV / cm^3
 
-    accur_threshold = 1e-6;
+    accur_threshold = 1e-4;
     RT = RayTracer; # define ray tracer module
 
     func_use = RT.ωNR_e
