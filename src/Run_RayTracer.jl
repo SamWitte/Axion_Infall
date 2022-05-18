@@ -15,25 +15,26 @@ B0 = 1e14;
 rNS = 10;
 gammaF = [1.0, 1.0]
 batchsize = 5;
-Ntajs = 10000
+Ntajs = 1000
 NS_vel_M = 0.000667;
-NS_vel_T = π ./ 2.0;
+NS_vel_T = π;
 CLen_Scale = false
 
-M_MC = 1e-10 # Solar mass
-R_MC = 3.06e9 # km
-axion_star_moddisp = false
-errSlve = 1e-24
+M_MC = 1e-12 # Solar mass
+R_MC = 5.28e3 # km
+axion_star_moddisp = true
+errSlve = 1e-20
 fix_time= 0.0
 period_average=true
 trace_trajs = true;
+theta_cut_trajs = true;
 
 file_tag = ""
 single_density_field = true # if true, assume asymptotic density described by 1 number
 RadApprox = false
 
 function run_all()
-    main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, batchsize; ode_err=1e-5, maxR=Nothing, cutT=1000, fix_time=fix_time, CLen_Scale=false, file_tag=file_tag, ntimes=1000, v_NS=[0 0 0], period_average=period_average, errSlve=errSlve, M_MC=M_MC, R_MC=R_MC,  save_more=true, vmean_ax=220.0, ntimes_ax=10000, dir_tag="results", trace_trajs=trace_trajs, axion_star_moddisp=axion_star_moddisp)
+    main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, batchsize; ode_err=1e-5, maxR=Nothing, cutT=1000, fix_time=fix_time, CLen_Scale=false, file_tag=file_tag, ntimes=1000, v_NS=[0 0 0], period_average=period_average, errSlve=errSlve, M_MC=M_MC, R_MC=R_MC,  save_more=true, vmean_ax=220.0, ntimes_ax=10000, dir_tag="results", trace_trajs=trace_trajs, axion_star_moddisp=axion_star_moddisp, theta_cut_trajs=theta_cut_trajs)
 end
 
 time0=Dates.now()

@@ -88,10 +88,10 @@ function func!(du, u, Mvars, lnt)
     end
 end
 
-function func_axion!(du, u, Mvars, t)
-#function func_axion!(du, u, Mvars, lnt)
+#function func_axion!(du, u, Mvars, t)
+function func_axion!(du, u, Mvars, lnt)
     @inbounds begin
-#        t = exp.(lnt)
+        t = exp.(lnt)
         x = u[:,1:3]
         v = u[:,4:6]
 
@@ -104,8 +104,11 @@ function func_axion!(du, u, Mvars, t)
         end
 
         
-        du[:,1:3] = -v ;  # v is km/s, x in km, t [s]
-        du[:,4:6] = GNew .* 1.0 ./ r.^2 .* xhat ./ c_km .* c_km; # unitless, assume 1M NS
+        # du[:,1:3] = -v ;  # v is km/s, x in km, t [s]
+        # du[:,4:6] = GNew .* 1.0 ./ r.^2 .* xhat; # units km/s/s, assume 1M NS
+        du[:,1:3] = -v .* t ;  # v is km/s, x in km, t [s]
+        du[:,4:6] = GNew .* 1.0 ./ r.^2 .* xhat .* t; # units km/s/s, assume 1M NS
+        
     end
 end
 
@@ -132,17 +135,17 @@ function propagate(ω, x0::Matrix, k0::Matrix,  nsteps::Int, Mvars::Array, Numer
 end
 
 function propagateAxion(x0::Matrix, k0::Matrix, nsteps::Int, NumerP::Array)
-    # ln_tstart, ln_tend, ode_err = NumerP
-    # tspan = (ln_tstart, ln_tend)
-    tstart, tend, ode_err = NumerP
-    tspan = (tstart, tend)
+    ln_tstart, ln_tend, ode_err = NumerP
+    tspan = (ln_tstart, ln_tend)
+    # tstart, tend, ode_err = NumerP
+    # tspan = (tstart, tend)
     saveat = (tspan[2] - tspan[1]) / (nsteps-1)
 
     # u0 = cu([x0 k0])
     u0 = ([x0 k0])
 
-    # probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err, abstol=ode_err, maxiters=1e7);
-    probAx = ODEProblem(func_axion!, u0, tspan, [tstart], reltol=ode_err, abstol=ode_err, maxiters=1e7);
+    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err, abstol=ode_err, maxiters=1e7);
+    # probAx = ODEProblem(func_axion!, u0, tspan, [tstart], reltol=ode_err, abstol=ode_err, maxiters=1e7);
     # sol = solve(probAx, Tsit5(), saveat=saveat);
     # sol = solve(probAx, Vern6(), saveat=saveat)
     sol = solve(probAx, lsoda(), saveat=saveat)
@@ -949,7 +952,7 @@ end
 
 
 
-function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, batchsize; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], errSlve=1e-10, period_average=false, M_MC=1e-12, R_MC=1.0e9,  save_more=true, vmean_ax=220.0, ntimes_ax=10000, dir_tag="results", trace_trajs=true, n_maxSample=8, axion_star_moddisp=false)
+function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, batchsize; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], errSlve=1e-10, period_average=false, M_MC=1e-12, R_MC=1.0e9,  save_more=true, vmean_ax=220.0, ntimes_ax=10000, dir_tag="results", trace_trajs=true, n_maxSample=8, axion_star_moddisp=false, theta_cut_trajs=true)
 
     # pass parameters
     # axion mass [eV], axion-photon coupling [1/GeV], misalignment angle (rot-B field) [rad], rotational freq pulars [1/s]
@@ -1166,19 +1169,20 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         
         
         if trace_trajs
-            # nsteps = 1000;
-            # ln_tstart=-15;
-            # ln_tend=log.(Roche_R ./ (NS_vel_M .* c_km));
-            # ode_err=1e-12;
-            # NumerP = [ln_tstart, ln_tend, ode_err]
+            nsteps = 1000;
+            ln_tstart=-15;
+            ln_tend=log.(Roche_R ./ (NS_vel_M .* c_km));
+            ode_err=1e-12;
+            NumerP = [ln_tstart, ln_tend, ode_err]
             # NumerP = [exp.(ln_tstart), exp.(ln_tend), ode_err]
-            # xF_AX, vF_AX = RT.propagateAxion(xpos_stacked, vel, nsteps, NumerP); # CHECK IF VEL IN RIGHT UNITS
-            # xF_tempt, vF_tempt = RT.propagateAxion(xpos_stacked, vel .* c_km, nsteps, NumerP); # CHECK IF VEL IN RIGHT UNITS
-            # xF_AX = xF_AX[:, :, end]
-            # xF_tempt = xF_tempt[:, :, end]
-            # vF_tempt = vF_tempt[:, :, end]
+            # xF_AX, vF_AX = RT.propagateAxion(xpos_stacked, vel, nsteps, NumerP);
+            xF_AX, vF_AX = RT.propagateAxion(xpos_stacked, vel .* c_km, nsteps, NumerP);
+            xF_AX = xF_AX[:, :, end]
+            vF_AX = vF_AX[:, :, end]
             # print(xF_tempt, "\t",  xF_AX, "\t", vF_tempt, "\t", vF_AX, "\n")
-            
+        end
+        
+        if theta_cut_trajs
             final_dist = sqrt.(sum(xF_AX .^2, dims=2));
             xFNorm = xF_AX ./ final_dist;
             theta_real = acos.(abs.(sum(xFNorm .* (NS_vel ./ NS_vel_M), dims=2)));
@@ -1187,8 +1191,6 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
             f_inx += sum(cut_trajs .<= 0);
             cut_trajs = cut_trajs[cut_trajs .> 0];
             # cut_trajs = [i for i in 1:length(xF_AX[:, 1])];
-            
-            
             # print(length(xpos_stacked[:,1]), "\t", length(cut_trajs), "\t", theta_real .* 180 ./ 3.14, "\t", asin.(br_max ./ Roche_R) .* 180 ./ 3.14,  "\n")
         else
             cut_trajs = [i for i in 1:length(xF_AX[:, 1])];
@@ -1359,6 +1361,12 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
     fileN *= string(rNS)*"_MassNS_"*string(Mass_NS)*"_Ntrajs_"*string(Ntajs);
     fileN *= "_NS_Mag_"*string(round(NS_vel_M, digits=5))*"_NS_Theta_"*string(round(NS_vel_T, digits=3))
     fileN *= "_Mmc_"*string(M_MC)*"_Rmc_"*string(R_MC)*"_"
+    if trace_trajs
+        fileN *= "_trace_trags_"
+    end
+    if theta_cut_trajs
+        fileN *= "_thetaCN_"
+    end
     fileN *= "_"*file_tag*"_.npz";
     npzwrite(fileN, SaveAll)
 end
