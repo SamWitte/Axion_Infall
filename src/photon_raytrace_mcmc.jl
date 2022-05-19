@@ -88,7 +88,7 @@ function func!(du, u, Mvars, lnt)
     end
 end
 
-#function func_axion!(du, u, Mvars, t)
+# function func_axion!(du, u, Mvars, t)
 function func_axion!(du, u, Mvars, lnt)
     @inbounds begin
         t = exp.(lnt)
@@ -98,16 +98,15 @@ function func_axion!(du, u, Mvars, lnt)
         r = sqrt.(sum(x .* x, dims=2))
 
         xhat = x  ./ r
-        massL = ones(length(r))
-        if sum(r .< 10) > 0
-            massL[r .< 10] .= 1.0 .* (r[r .< 10] ./ 10.0) .^ 3;
-        end
-
         
-        # du[:,1:3] = -v ;  # v is km/s, x in km, t [s]
-        # du[:,4:6] = GNew .* 1.0 ./ r.^2 .* xhat; # units km/s/s, assume 1M NS
+#        du[:,1:3] = -v ;  # v is km/s, x in km, t [s]
+#        du[:,4:6] = GNew .* 1.0 ./ r.^2 .* xhat; # units km/s/s, assume 1M NS
         du[:,1:3] = -v .* t ;  # v is km/s, x in km, t [s]
         du[:,4:6] = GNew .* 1.0 ./ r.^2 .* xhat .* t; # units km/s/s, assume 1M NS
+        if sum(r .< 10) > 0
+            du[r .< 10, 4:6] .= GNew .* 1.0 .* r ./ (10.0 .^3) .* xhat .* t; # units km/s/s, assume 1M NS
+#            du[r .< 10, 4:6] .= GNew .* 1.0 .* r ./ (10.0 .^3) .* xhat ; # units km/s/s, assume 1M NS
+        end
         
     end
 end
@@ -147,7 +146,7 @@ function propagateAxion(x0::Matrix, k0::Matrix, nsteps::Int, NumerP::Array)
     probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err, abstol=ode_err, maxiters=1e7);
     # probAx = ODEProblem(func_axion!, u0, tspan, [tstart], reltol=ode_err, abstol=ode_err, maxiters=1e7);
     # sol = solve(probAx, Tsit5(), saveat=saveat);
-    # sol = solve(probAx, Vern6(), saveat=saveat)
+    # sol = solve(probAx, Vern7(), saveat=saveat)
     sol = solve(probAx, lsoda(), saveat=saveat)
 
 
@@ -1247,11 +1246,11 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         sln_δk = RT.dk_ds(xpos_stacked, k_init, [func_use, MagnetoVars]);
         conversion_F = sln_δk ./  (hbar .* c_km) # 1/km^2;
         
-        sln_δk_a = RT.dwds_abs_vec(xpos_stacked, k_init, [func_use, MagnetoVars]);
-        conversion_F_a = sln_δk_a ./  (hbar .* c_km) # 1/km^2;
+        # sln_δk_a = RT.dwds_abs_vec(xpos_stacked, k_init, [func_use, MagnetoVars]);
+        # conversion_F_a = sln_δk_a ./  (hbar .* c_km) # 1/km^2;
         
-        sln_δk_millar = RT.test_dw_millar(xpos_stacked, k_init, [func_use, MagnetoVars]);
-        conversion_F_Millar = sln_δk_millar ./  (hbar .* c_km) # 1/km^2;
+        # sln_δk_millar = RT.test_dw_millar(xpos_stacked, k_init, [func_use, MagnetoVars]);
+        # conversion_F_Millar = sln_δk_millar ./  (hbar .* c_km) # 1/km^2;
         # print(conversion_F_a ./ conversion_F_Millar, "\n\n")
         
         MagnetoVars =  [θm, ωPul, B0, rNS, [1.0 1.0], times_pts]
@@ -1275,6 +1274,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
         
         sln_prob = weight_angle .* (vmag ./ c_km) .* phaseS .* c_km .* mcmc_weightsFull ; # photons / second
+        sln_probS = phaseS .* c_km .* mcmc_weightsFull ; # photons / second
 
         
         sln_k = k_init;
@@ -1319,12 +1319,15 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         # cut out high prob conversions
         weightC[weightC[:] .> 1.0] .= 0.0;
         
+        f_inx += num_photons
+        
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 1] .= view(θf, :);
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 2] .= view(ϕf,:);
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 3] .= view(θfX, :);
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 4] .= view(ϕfX, :);
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 5] .= sqrt.(sum(xF[:, :, end] .^2, dims=2))[:]; # r final
-        SaveAll[photon_trajs:photon_trajs + num_photons - 1, 6] .= sln_prob[:] .* weightC .^ 2 .* exp.(-opticalDepth[:]); #  num photons / second
+        # SaveAll[photon_trajs:photon_trajs + num_photons - 1, 6] .= sln_prob[:] .* weightC .^ 2 .* exp.(-opticalDepth[:]); #  num photons / second
+        SaveAll[photon_trajs:photon_trajs + num_photons - 1, 6] .= sln_probS[:]; #  num photons / second
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 7] .= Δω[:];
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 8] .= sln_ConVL[:];
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 9] .= sln_x[:, 1]; # initial x
@@ -1354,6 +1357,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
     # cut out unused elements
     SaveAll = SaveAll[SaveAll[:,6] .> 0, :];
+    # print("FINX \t", f_inx, "\n")
     SaveAll[:,6] ./= (float(f_inx)); # divide off by N trajectories sampled
 
     fileN = dir_tag*"/Minicluster__MassAx_"*string(Mass_a);
