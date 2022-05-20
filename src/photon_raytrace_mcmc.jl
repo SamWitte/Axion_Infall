@@ -101,9 +101,9 @@ function func_axion!(du, u, Mvars, lnt)
 
         du[:,1:3] = -v .* t ;  # v is km/s, x in km, t [s]
         du[:,4:6] = GNew .* 1.0 ./ r.^2 .* xhat .* t; # units km/s/s, assume 1M NS
-        if sum(r .< 10) > 0
-            du[r .< 10.0, 4:6] .= GNew .* 1.0 .* r[r .< 10.0] ./ (10.0 .^3) .* xhat[r .< 10.0] .* t; # units km/s/s, assume 1M NS
-        end
+#        if sum(r .< 10) > 0
+#            du[r .< 10.0, 4:6] .= GNew .* 1.0 .* r[r .< 10.0] ./ (10.0 .^3) .* xhat[r .< 10.0] .* t; # units km/s/s, assume 1M NS
+#        end
         
     end
 end
