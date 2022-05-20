@@ -1216,9 +1216,9 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
             ln_tend=log.(Roche_R ./ (NS_vel_M .* c_km));
             ode_err=1e-12;
             NumerP = [ln_tstart, ln_tend, ode_err]
-            xF_AX, vF_AX = RT.propagateAxion(xpos_stacked, vel .* c_km, nsteps, NumerP);
-            xF_AX = xF_AX[:, :, end]
-            vF_AX = vF_AX[:, :, end]
+            tempX, vempV = RT.propagateAxion(xpos_stacked, vel .* c_km, nsteps, NumerP);
+            xF_AX = tempX[:, :, end]
+            vF_AX = vempV[:, :, end]
             # print(xF_tempt, "\t",  xF_AX, "\t", vF_tempt, "\t", vF_AX, "\n")
         end
         
