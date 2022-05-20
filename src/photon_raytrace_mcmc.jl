@@ -111,6 +111,25 @@ function func_axion!(du, u, Mvars, lnt)
     end
 end
 
+function func_axionBACK!(du, u, Mvars, t)
+    @inbounds begin
+        x = u[:,1:3]
+        v = u[:,4:6]
+
+        r = sqrt.(sum(x .* x, dims=2))
+
+        xhat = x  ./ r
+        
+        du[:,1:3] = v ;  # v is km/s, x in km, t [s]
+        du[:,4:6] = -GNew .* 1.0 ./ r.^2 .* xhat; # units km/s/s, assume 1M NS
+
+        if sum(r .< 10) > 0
+            du[r .< 10, 4:6] .= -GNew .* 1.0 .* r ./ (10.0 .^3) .* xhat ; # units km/s/s, assume 1M NS
+        end
+        
+    end
+end
+
 
 
 # propogate photon module
@@ -143,15 +162,38 @@ function propagateAxion(x0::Matrix, k0::Matrix, nsteps::Int, NumerP::Array)
     # u0 = cu([x0 k0])
     u0 = ([x0 k0])
 
-    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err, abstol=ode_err, maxiters=1e7);
-    # probAx = ODEProblem(func_axion!, u0, tspan, [tstart], reltol=ode_err, abstol=ode_err, maxiters=1e7);
+    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err, abstol=1e-20, maxiters=1e7);
+    # probAx = ODEProblem(func_axion!, u0, tspan, [tstart], reltol=ode_err, abstol=1e-20, maxiters=1e7);
     # sol = solve(probAx, Tsit5(), saveat=saveat);
     # sol = solve(probAx, Vern7(), saveat=saveat)
     sol = solve(probAx, lsoda(), saveat=saveat)
 
-
     x = cat([u[:, 1:3] for u in sol.u]...,dims=3);
     v = cat([u[:, 4:6] for u in sol.u]...,dims=3);
+
+    return x, v
+
+end
+
+function propagateAxion_backwards(x0::Matrix, k0::Matrix, nsteps::Int, saveT::Array, NumerP::Array)
+    
+    tstart, tend, ode_err = NumerP
+    tspan = (tstart, tend)
+    saveat = saveT
+
+    # u0 = cu([x0 k0])
+    u0 = ([x0 k0])
+
+    
+    probAx = ODEProblem(func_axionBACK!, u0, tspan, [tstart], reltol=ode_err, abstol=1e-45, maxiters=1e7);
+    # sol = solve(probAx, Tsit5(), saveat=saveat);
+    # sol = solve(probAx, Vern7(), saveat=saveat, dtmax=)
+    sol = solve(probAx, lsoda(), saveat=saveat)
+
+    
+    
+    x = cat([u[:, 1:3] for u in sol.u]..., dims=3)
+    v = cat([u[:, 4:6] for u in sol.u]..., dims=3);
 
     return x, v
 
@@ -168,12 +210,14 @@ function solve_vel_CS(θ, ϕ, r, NS_vel; guess=[0.1 0.1 0.1], errV=1e-24, Mass_N
 
         denom = ff .+ GMr .- sqrt.(ff) .* sum(x .* rhat);
 
+
         F[1] = (ff .* vx .+ sqrt.(ff) .* GMr .* rhat[1] .- sqrt.(ff) .* vx .* sum(x .* rhat)) ./ (NS_vel[1] .* denom) .- 1.0
         F[2] = (ff .* vy .+ sqrt.(ff) .* GMr .* rhat[2] .- sqrt.(ff) .* vy .* sum(x .* rhat)) ./ (NS_vel[2] .* denom) .- 1.0
         F[3] = (ff .* vz .+ sqrt.(ff) .* GMr .* rhat[3] .- sqrt.(ff) .* vz .* sum(x .* rhat)) ./ (NS_vel[3] .* denom) .- 1.0
         # print(F[1], "\t",F[2], "\t", F[3],"\n")
         # print(θ, "\t", ϕ,"\t", r, "\n")
     end
+
 
     soln = nlsolve(f!, guess, autodiff = :forward, ftol=errV, iterations=10000)
 
@@ -189,7 +233,8 @@ function jacobian_fv(x_in, vel_loc)
     rmag = sqrt.(sum(x_in.^2));
     ϕ = atan.(x_in[2], x_in[1])
     θ = acos.(x_in[3] ./ rmag)
-
+    
+    
     dvXi_dV = grad(v_infinity(θ, ϕ, rmag, seed(vel_loc), v_comp=1));
     dvYi_dV = grad(v_infinity(θ, ϕ, rmag, seed(vel_loc), v_comp=2));
     dvZi_dV = grad(v_infinity(θ, ϕ, rmag, seed(vel_loc), v_comp=3));
@@ -206,6 +251,7 @@ function v_infinity(θ, ϕ, r, vel_loc; v_comp=1, Mass_NS=1)
 
     v_inf = sqrt.(vel_loc_mag.^2 .- (2 .* GMr)); # unitless
     rhat = [sin.(θ) .* cos.(ϕ) sin.(θ) .* sin.(ϕ) cos.(θ)]
+    
     
     denom = v_inf.^2 .+ GMr .- v_inf .* sum(vel_loc .* rhat);
     if v_comp == 1
@@ -1189,8 +1235,6 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
             cut_trajs = [if abs.(theta_real[i]) .<= abs.(theta_max) i else -1 end for i in 1:length(theta_real)];
             f_inx += sum(cut_trajs .<= 0);
             cut_trajs = cut_trajs[cut_trajs .> 0];
-            # cut_trajs = [i for i in 1:length(xF_AX[:, 1])];
-            # print(length(xpos_stacked[:,1]), "\t", length(cut_trajs), "\t", theta_real .* 180 ./ 3.14, "\t", asin.(br_max ./ Roche_R) .* 180 ./ 3.14,  "\n")
         else
             cut_trajs = [i for i in 1:length(xF_AX[:, 1])];
         end
@@ -1274,7 +1318,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
         
         sln_prob = weight_angle .* (vmag ./ c_km) .* phaseS .* c_km .* mcmc_weightsFull ; # photons / second
-        sln_probS = phaseS .* c_km .* mcmc_weightsFull ; # photons / second
+        
 
         
         sln_k = k_init;
@@ -1326,8 +1370,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 3] .= view(θfX, :);
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 4] .= view(ϕfX, :);
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 5] .= sqrt.(sum(xF[:, :, end] .^2, dims=2))[:]; # r final
-        # SaveAll[photon_trajs:photon_trajs + num_photons - 1, 6] .= sln_prob[:] .* weightC .^ 2 .* exp.(-opticalDepth[:]); #  num photons / second
-        SaveAll[photon_trajs:photon_trajs + num_photons - 1, 6] .= sln_probS[:]; #  num photons / second
+        SaveAll[photon_trajs:photon_trajs + num_photons - 1, 6] .= sln_prob[:] .* weightC .^ 2 .* exp.(-opticalDepth[:]); #  num photons / second
+        # SaveAll[photon_trajs:photon_trajs + num_photons - 1, 6] .= sln_probS[:]; #  num photons / second
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 7] .= Δω[:];
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 8] .= sln_ConVL[:];
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 9] .= sln_x[:, 1]; # initial x
