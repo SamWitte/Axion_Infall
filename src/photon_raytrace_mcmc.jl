@@ -162,7 +162,7 @@ function propagateAxion(x0::Matrix, k0::Matrix, nsteps::Int, NumerP::Array)
     # u0 = cu([x0 k0])
     u0 = ([x0 k0])
 
-    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err, abstol=1e-20, maxiters=1e7);
+    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err, abstol=1e-12, maxiters=1e7);
     # probAx = ODEProblem(func_axion!, u0, tspan, [tstart], reltol=ode_err, abstol=1e-20, maxiters=1e7);
     # sol = solve(probAx, Tsit5(), saveat=saveat);
     # sol = solve(probAx, Vern7(), saveat=saveat)
