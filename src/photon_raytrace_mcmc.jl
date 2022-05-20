@@ -88,7 +88,6 @@ function func!(du, u, Mvars, lnt)
     end
 end
 
-# function func_axion!(du, u, Mvars, t)
 function func_axion!(du, u, Mvars, lnt)
     @inbounds begin
         t = exp.(lnt)
@@ -99,13 +98,11 @@ function func_axion!(du, u, Mvars, lnt)
 
         xhat = x  ./ r
         
-#        du[:,1:3] = -v ;  # v is km/s, x in km, t [s]
-#        du[:,4:6] = GNew .* 1.0 ./ r.^2 .* xhat; # units km/s/s, assume 1M NS
+
         du[:,1:3] = -v .* t ;  # v is km/s, x in km, t [s]
         du[:,4:6] = GNew .* 1.0 ./ r.^2 .* xhat .* t; # units km/s/s, assume 1M NS
         if sum(r .< 10) > 0
-            du[r .< 10.0, 4:6] .= GNew .* 1.0 .* r[r .< 10.0] ./ (10.0 .^3) .* xhat[r .< 10.0] .* t; # units km/s/s, assume 1M NS
-#            du[r .< 10, 4:6] .= GNew .* 1.0 .* r ./ (10.0 .^3) .* xhat ; # units km/s/s, assume 1M NS
+            du[r .< 10.0, 4:6] .= GNew .* 1.0 .* r[r .< 10.0] ./ (10.0 .^3) .* xhat[r .< 10.0] .* t[r .< 10.0]; # units km/s/s, assume 1M NS
         end
         
     end
@@ -162,7 +159,7 @@ function propagateAxion(x0::Matrix, k0::Matrix, nsteps::Int, NumerP::Array)
     # u0 = cu([x0 k0])
     u0 = ([x0 k0])
 
-    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err, abstol=1e-12, maxiters=1e7);
+    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err, abstol=1e-10, maxiters=1e7);
     # probAx = ODEProblem(func_axion!, u0, tspan, [tstart], reltol=ode_err, abstol=1e-20, maxiters=1e7);
     # sol = solve(probAx, Tsit5(), saveat=saveat);
     # sol = solve(probAx, Vern7(), saveat=saveat)
@@ -1219,8 +1216,6 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
             ln_tend=log.(Roche_R ./ (NS_vel_M .* c_km));
             ode_err=1e-12;
             NumerP = [ln_tstart, ln_tend, ode_err]
-            # NumerP = [exp.(ln_tstart), exp.(ln_tend), ode_err]
-            # xF_AX, vF_AX = RT.propagateAxion(xpos_stacked, vel, nsteps, NumerP);
             xF_AX, vF_AX = RT.propagateAxion(xpos_stacked, vel .* c_km, nsteps, NumerP);
             xF_AX = xF_AX[:, :, end]
             vF_AX = vF_AX[:, :, end]
