@@ -95,13 +95,14 @@ def get_NS_vel(fileN):
     fnm2 = fileN.find("_NS_Theta_")
     fnm3 = fileN.find("_Mmc_")
     fnm4 = fileN.find("_Rmc_")
-    fnm5 = fileN.find("___")
+    fnm5 = fileN[fnm4+len("_Rmc_"):].find("_")
+    
     
         
     NS_vel_M = float(fileN[fnm1 + len("_NS_Mag_"): fnm2])
     NS_vel_T = float(fileN[fnm2 + len("_NS_Theta_"): fnm3])
     MMc = float(fileN[fnm3 + len("_Mmc_"): fnm4])
-    R_amc = float(fileN[fnm4 + len("_Rmc_"): fnm5])
+    R_amc = float(fileN[fnm4 + len("_Rmc_"): fnm4 + len("_Rmc_") + fnm5])
     return NS_vel_T, NS_vel_M, MMc, R_amc
 
 def get_t0_point(fileN, b, NS_vel_T_true):

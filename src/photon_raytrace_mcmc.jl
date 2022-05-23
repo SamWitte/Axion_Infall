@@ -98,9 +98,10 @@ function func_axion!(du, u, Mvars, lnt)
 
         xhat = x  ./ r
         
-
+        mass_eff = ones(length(r))
+        mass_eff[r .< 10] .= 1.0 .* (r[r .< 10] ./ 10).^3
         du[:,1:3] = -v .* t ;  # v is km/s, x in km, t [s]
-        du[:,4:6] = GNew .* 1.0 ./ r.^2 .* xhat .* t; # units km/s/s, assume 1M NS
+        du[:,4:6] = GNew .* mass_eff ./ r.^2 .* xhat .* t; # units km/s/s, assume 1M NS
 #        if sum(r .< 10) > 0
 #            du[r .< 10.0, 4:6] .= GNew .* 1.0 .* r[r .< 10.0] ./ (10.0 .^3) .* xhat[r .< 10.0] .* t; # units km/s/s, assume 1M NS
 #        end
@@ -117,12 +118,14 @@ function func_axionBACK!(du, u, Mvars, t)
 
         xhat = x  ./ r
         
+        mass_eff = ones(length(r))
+        mass_eff[r .< 10] .= 1.0 .* (r[r .< 10] ./ 10).^3
         du[:,1:3] = v ;  # v is km/s, x in km, t [s]
-        du[:,4:6] = -GNew .* 1.0 ./ r.^2 .* xhat; # units km/s/s, assume 1M NS
+        du[:,4:6] = -GNew .* mass_eff ./ r.^2 .* xhat; # units km/s/s, assume 1M NS
 
-        if sum(r .< 10) > 0
-            du[r .< 10, 4:6] .= -GNew .* 1.0 .* r ./ (10.0 .^3) .* xhat ; # units km/s/s, assume 1M NS
-        end
+#        if sum(r .< 10) > 0
+#            du[r .< 10, 4:6] .= -GNew .* 1.0 .* r[r .< 10] ./ (10.0 .^3) .* xhat[r .< 10] ; # units km/s/s, assume 1M NS
+#        end
         
     end
 end
