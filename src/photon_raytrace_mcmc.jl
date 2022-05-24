@@ -102,10 +102,7 @@ function func_axion!(du, u, Mvars, lnt)
         mass_eff[r .< 10] .= 1.0 .* (r[r .< 10] ./ 10).^3
         du[:,1:3] = -v .* t ;  # v is km/s, x in km, t [s]
         du[:,4:6] = GNew .* mass_eff ./ r.^2 .* xhat .* t; # units km/s/s, assume 1M NS
-#        if sum(r .< 10) > 0
-#            du[r .< 10.0, 4:6] .= GNew .* 1.0 .* r[r .< 10.0] ./ (10.0 .^3) .* xhat[r .< 10.0] .* t; # units km/s/s, assume 1M NS
-#        end
-        
+
     end
 end
 
@@ -123,9 +120,6 @@ function func_axionBACK!(du, u, Mvars, t)
         du[:,1:3] = v ;  # v is km/s, x in km, t [s]
         du[:,4:6] = -GNew .* mass_eff ./ r.^2 .* xhat; # units km/s/s, assume 1M NS
 
-#        if sum(r .< 10) > 0
-#            du[r .< 10, 4:6] .= -GNew .* 1.0 .* r[r .< 10] ./ (10.0 .^3) .* xhat[r .< 10] ; # units km/s/s, assume 1M NS
-#        end
         
     end
 end
@@ -162,11 +156,20 @@ function propagateAxion(x0::Matrix, k0::Matrix, nsteps::Int, NumerP::Array)
     # u0 = cu([x0 k0])
     u0 = ([x0 k0])
 
-    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err, abstol=1e-10, maxiters=1e7);
+    function condition(u, t, integrator) # Event when event_f(u,t) == 0
+        hold = sqrt.(sum(u[:, 1:3].^2, dims=2)) .- 10.0
+        # print(hold)
+        return minimum(hold)
+    end
+    function affect!(int)
+        set_proposed_dt!(int,(int.t-int.tprev)/100)
+    end
+    cb = ContinuousCallback(condition, affect!)
+    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err, abstol=ode_err, callback=cb, maxiters=1e7);
     # probAx = ODEProblem(func_axion!, u0, tspan, [tstart], reltol=ode_err, abstol=1e-20, maxiters=1e7);
     # sol = solve(probAx, Tsit5(), saveat=saveat);
-    # sol = solve(probAx, Vern7(), saveat=saveat)
-    sol = solve(probAx, lsoda(), saveat=saveat)
+    sol = solve(probAx, Vern7(), saveat=saveat)
+    # sol = solve(probAx, lsoda(), saveat=saveat)
 
     x = cat([u[:, 1:3] for u in sol.u]...,dims=3);
     v = cat([u[:, 4:6] for u in sol.u]...,dims=3);
