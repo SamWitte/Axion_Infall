@@ -99,7 +99,7 @@ function func_axion!(du, u, Mvars, lnt)
         xhat = x  ./ r
         
         mass_eff = ones(length(r))
-        mass_eff[r .< 10] .= 1.0 .* (r[r .< 10] ./ 10).^3
+#        mass_eff[r .< 10] .= 1.0 .* (r[r .< 10] ./ 10).^3
         du[:,1:3] = -v .* t ;  # v is km/s, x in km, t [s]
         du[:,4:6] = GNew .* mass_eff ./ r.^2 .* xhat .* t; # units km/s/s, assume 1M NS
 
@@ -116,7 +116,7 @@ function func_axionBACK!(du, u, Mvars, t)
         xhat = x  ./ r
         
         mass_eff = ones(length(r))
-        mass_eff[r .< 10] .= 1.0 .* (r[r .< 10] ./ 10).^3
+#        mass_eff[r .< 10] .= 1.0 .* (r[r .< 10] ./ 10).^3
         du[:,1:3] = v ;  # v is km/s, x in km, t [s]
         du[:,4:6] = -GNew .* mass_eff ./ r.^2 .* xhat; # units km/s/s, assume 1M NS
 
@@ -188,7 +188,7 @@ function propagateAxion_backwards(x0::Matrix, k0::Matrix, nsteps::Int, saveT::Ar
     u0 = ([x0 k0])
 
     
-    probAx = ODEProblem(func_axionBACK!, u0, tspan, [tstart], reltol=ode_err, abstol=1e-45, maxiters=1e7);
+    probAx = ODEProblem(func_axionBACK!, u0, tspan, [tstart], reltol=ode_err, abstol=1e-13, maxiters=1e7);
     # sol = solve(probAx, Tsit5(), saveat=saveat);
     # sol = solve(probAx, Vern7(), saveat=saveat, dtmax=)
     sol = solve(probAx, lsoda(), saveat=saveat)
@@ -1000,15 +1000,13 @@ end
 
 
 
-function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, batchsize; ode_err=1e-5, maxR=Nothing, cutT=10, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, v_NS=[0 0 0], errSlve=1e-10, period_average=false, M_MC=1e-12, R_MC=1.0e9,  save_more=true, vmean_ax=220.0, ntimes_ax=10000, dir_tag="results", trace_trajs=true, n_maxSample=8, axion_star_moddisp=false, theta_cut_trajs=true)
+function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, batchsize; ode_err=1e-5, fix_time=Nothing, CLen_Scale=true, file_tag="", ntimes=1000, errSlve=1e-10, M_MC=1e-12, R_MC=1.0e9,  save_more=true, ntimes_ax=10000, dir_tag="results", trace_trajs=true, n_maxSample=8, axion_star_moddisp=false, theta_cut_trajs=true)
 
     # pass parameters
     # axion mass [eV], axion-photon coupling [1/GeV], misalignment angle (rot-B field) [rad], rotational freq pulars [1/s]
     # magnetic field strengh at surface [G], radius NS [km], mass NS [solar mass], dispersion relations
     # number of axion trajectories to generate
-    # maxR should be nuumber < 1 used for efficient sampling...
-    # vmean_ax = 220.0; # km/s mean velocity of axion in rest frame galaxy
-
+    
     # rhoDM -- this is asymptotic density. currently scaled to 1 GeV / cm^3
 
     accur_threshold = 1e-4;
@@ -1060,22 +1058,6 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
     end
 
     file_tag *= "_odeErr_"*string(ode_err);
-
-    file_tag *= "_vxNS_"*string(v_NS[1]);
-    file_tag *= "_vyNS_"*string(v_NS[2]);
-    file_tag *= "_vzNS_"*string(v_NS[3]);
-    if (v_NS[1] == 0)&&(v_NS[1] == 0)&&(v_NS[1] == 0)
-        phaseApprox = true;
-    else
-        phaseApprox = false;
-    end
-    vNS_mag = sqrt.(sum(v_NS.^2));
-    if vNS_mag .> 0
-        vNS_theta = acos.(v_NS[3] ./ vNS_mag);
-        vNS_phi = atan.(v_NS[2], v_NS[1]);
-    end
-
-    vGu = 0.5 # guess point
 
     # define time at which we find crossings
     t0_ax = zeros(batchsize);
@@ -1143,18 +1125,16 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
             NS_vel_p = NS_vel .+ v_perturb
 
             
-            
-#            time0=Dates.now()
-            # vGu = sqrt.(2 .* GNew .* Mass_NS ./ rmag[i]) ./ c_km .* 1.3;
-            # vGu = 0.9
+
             fail_first = false
             fail_second = false
             
             found = false
             cnt_careful= 0
             while !found
-                vGu = rand()
-                velV, accur = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_p, guess=[vGu vGu vGu], errV=errSlve)
+                randARR = float(rand(-1:2:1, 3))
+                vGuess = [rand() .* randARR[1] rand() .* randARR[2] rand() .* randARR[3]]
+                velV, accur = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_p, guess=vGuess, errV=errSlve)
                 test_func = (sum(velV.^2) .- (2 .* GNew .* Mass_NS ./ rmag[i] ./ (c_km .^ 2))); # unitless
                 if (accur .< accur_threshold)&&(test_func .> 0)
                     vel[i, :] = velV
@@ -1196,11 +1176,15 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
             end
             
             if !fail_first
-                xF_AX[i, :] = RT.solve_Rinit(xpos_flat[i, :], NS_vel_p, vel[i, :]; guess=R_guessVal, errV=1e-10, Roche_R=Roche_R)
+                if !trace_trajs
+                    xF_AX[i, :] = RT.solve_Rinit(xpos_flat[i, :], NS_vel_p, vel[i, :]; guess=R_guessVal, errV=1e-10, Roche_R=Roche_R)
+                end
                 vF_AX[i, :] = NS_vel_p;
             end
             if !fail_second
-                xF_AX[i+length(rmag), :] = RT.solve_Rinit(xpos_flat[i, :], NS_vel_p, vel[i+length(rmag), :]; guess=R_guessVal, errV=1e-10, Roche_R=Roche_R)
+                if !trace_trajs
+                    xF_AX[i+length(rmag), :] = RT.solve_Rinit(xpos_flat[i, :], NS_vel_p, vel[i+length(rmag), :]; guess=R_guessVal, errV=1e-10, Roche_R=Roche_R)
+                end
                 vF_AX[i, :] = NS_vel_p;
             end
             
@@ -1274,9 +1258,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
        
         cθ = sum(newV .* Bvec, dims=2) ./ Bmag
-        vIfty = ones(length(vmag), 3) .* v_NS # km /s
         
-        vel_eng = sum((vIfty ./ c_km).^ 2, dims = 2) ./ 2;
+        
         vmag_tot = vmag; # km/s
         k_init_ax = Mass_a .* newV .* (vmag_tot ./ c_km);
 
@@ -1309,6 +1292,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         # prob_millar =  π ./ 2 .* (Ax_g .* B_tot) .^2 ./ abs.(conversion_F_Millar) .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5)  ./ ((2.998e5 .* 6.58e-16) .^2) .* mass_factor .* (xi .* ωp ./ kk); #unitless
         
         Prob = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ conversion_F .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5) .^2 ./ ((2.998e5 .* 6.58e-16) .^2) .* mass_factorR; #unitless
+        
         # prob_alx = π ./ 2 .* (Ax_g .* B_tot) .^2 ./ conversion_F_a .* (1e9 .^2) ./ (vmag_tot ./ 2.998e5)  ./ ((2.998e5 .* 6.58e-16) .^2) ./ sin.(acos.(cθ)).^2; #unitless
         # print(prob ./ prob_alx, "\t", prob2 ./ prob_alx, "\n")
         # print(abs.(conversion_F_a) ./ abs.(conversion_F_Millar), "\n")
@@ -1324,7 +1308,6 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         
         sln_k = k_init;
         sln_x = xpos_stacked;
-        sln_vInf = vel_eng ;
         sln_t = t0_full;
         sln_ConVL = sqrt.(π ./ conversion_F);
 
@@ -1346,8 +1329,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
         # compute energy dispersion (ωf - ωi) / ωi
         passA = [func_use, MagnetoVars];
-        # Δω = (RT.dwdt_vec(xF, kF, ttΔω, passA) ) ./ Mass_a .+ sln_vInf[:];
-        Δω = tF[:, end] ./ Mass_a .+ sln_vInf[:];
+        # Δω = (RT.dwdt_vec(xF, kF, ttΔω, passA) ) ./ Mass_a .+ vF_AX.^2 ./ 2.0;
+        Δω = tF[:, end] ./ Mass_a .+ sqrt.(sum(vF_AX.^2, dims=2)) ./ 2.0;
         
         
         opticalDepth = RT.tau_cyc(xF, kF, ttΔω, passA, Mass_a);
@@ -1405,7 +1388,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
     # print("FINX \t", f_inx, "\n")
     SaveAll[:,6] ./= (float(f_inx)); # divide off by N trajectories sampled
 
-    fileN = dir_tag*"/Minicluster__MassAx_"*string(Mass_a);
+    fileN = dir_tag*"/Minicluster__MassAx_"*string(Mass_a)*"_AxG_"*string(Ax_g);
     fileN *= "_ThetaM_"*string(θm)*"_rotPulsar_"*string(round(ωPul, digits=3))*"_B0_"*string(B0)*"_rNS_";
     fileN *= string(rNS)*"_MassNS_"*string(Mass_NS)*"_Ntrajs_"*string(Ntajs);
     fileN *= "_NS_Mag_"*string(round(NS_vel_M, digits=5))*"_NS_Theta_"*string(round(NS_vel_T, digits=3))
