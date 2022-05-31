@@ -162,10 +162,12 @@ function propagateAxion(x0::Matrix, k0::Matrix, nsteps::Int, NumerP::Array)
         return minimum(hold)
     end
     function affect!(int)
-        set_proposed_dt!(int,(int.t-int.tprev)/100)
+        if (int.t-int.tprev) .> 1e-13
+            set_proposed_dt!(int,(int.t-int.tprev)/100)
+        end
     end
     cb = ContinuousCallback(condition, affect!)
-    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err, abstol=ode_err, callback=cb, maxiters=1e7);
+    probAx = ODEProblem(func_axion!, u0, tspan, [ln_tstart], reltol=ode_err, abstol=ode_err, callback=cb, maxiters=1e7, dtmin=1e-13, force_dtmin=true);
     # probAx = ODEProblem(func_axion!, u0, tspan, [tstart], reltol=ode_err, abstol=1e-20, maxiters=1e7);
     # sol = solve(probAx, Tsit5(), saveat=saveat);
     sol = solve(probAx, Vern7(), saveat=saveat)
