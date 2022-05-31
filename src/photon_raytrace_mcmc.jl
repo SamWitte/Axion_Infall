@@ -1017,6 +1017,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
     func_use = RT.ωNR_e
     Roche_R = R_MC .* (2 .* Mass_NS ./ M_MC).^(1.0 ./ 3.0) # km
     NS_vel = [0.0 sin.(NS_vel_T) cos.(NS_vel_T)] .* NS_vel_M; # unitless
+    NS_vel_norm = [0.0 sin.(NS_vel_T) cos.(NS_vel_T)] ; # unitless
     R_guessVal = -[0.0 sin.(NS_vel_T) cos.(NS_vel_T)] .* Roche_R
     
 
@@ -1216,7 +1217,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         
         if theta_cut_trajs
             xFNorm = xF_AX ./ sqrt.(sum(xF_AX .^2, dims=2));
-            theta_real = acos.(abs.(sum(xFNorm .* (NS_vel ./ NS_vel_M), dims=2)));
+            theta_real = acos.(abs.(sum(xFNorm .* NS_vel_norm, dims=2)));
             theta_max = asin.(br_max ./ Roche_R)
             cut_trajs = [if abs.(theta_real[i]) .<= abs.(theta_max) i else -1 end for i in 1:length(theta_real)];
             f_inx += sum(cut_trajs .<= 0);
