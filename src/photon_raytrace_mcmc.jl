@@ -1217,7 +1217,11 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         
         if theta_cut_trajs
             xFNorm = xF_AX ./ sqrt.(sum(xF_AX .^2, dims=2));
-            theta_real = acos.(abs.(sum(xFNorm .* NS_vel_norm, dims=2)));
+            try
+                theta_real = acos.(abs.(sum(xFNorm .* NS_vel_norm, dims=2)));
+            catch
+                theta_real = 0.0 # sometimes failure to due precision, doesnt matter though
+            end
             theta_max = asin.(br_max ./ Roche_R)
             cut_trajs = [if abs.(theta_real[i]) .<= abs.(theta_max) i else -1 end for i in 1:length(theta_real)];
             f_inx += sum(cut_trajs .<= 0);
