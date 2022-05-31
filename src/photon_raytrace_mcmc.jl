@@ -162,7 +162,7 @@ function propagateAxion(x0::Matrix, k0::Matrix, nsteps::Int, NumerP::Array)
         return minimum(hold)
     end
     function affect!(int)
-        if (int.t-int.tprev) .> 1e-13
+        if (int.t-int.tprev) .> 1e-12
             set_proposed_dt!(int,(int.t-int.tprev)/100)
         end
     end
