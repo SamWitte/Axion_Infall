@@ -164,7 +164,7 @@ function combine_files(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, NS_vel
     fileL = String[];
     
     for i = 0:(Nruns-1)
-        file_tagL = string(i) * file_tag
+        file_tagL = file_tag * string(i)
         if fix_time != Nothing
             file_tagL *= "_fixed_time_"*string(fix_time);
         end
