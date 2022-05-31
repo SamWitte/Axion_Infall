@@ -1217,6 +1217,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         
         if theta_cut_trajs
             xFNorm = xF_AX ./ sqrt.(sum(xF_AX .^2, dims=2));
+            theta_real = zeros(length(xF_AX[:,1]))
             try
                 theta_real = acos.(abs.(sum(xFNorm .* NS_vel_norm, dims=2)));
             catch
