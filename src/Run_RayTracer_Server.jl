@@ -88,7 +88,8 @@ function parse_commandline()
             default = 1 # perform cut
             
         "--fixed_time"
-
+            arg_type = Float64
+            default = 0.0 # perform cut
     end
 
     return parse_args(s)
