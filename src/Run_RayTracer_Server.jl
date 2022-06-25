@@ -86,6 +86,8 @@ function parse_commandline()
         "--theta_cut_trajs"
             arg_type = Int
             default = 1 # perform cut
+            
+        "--fixed_time"
 
     end
 
@@ -124,7 +126,7 @@ batchSize = 5;
 
 # analysis options
 CLen_Scale = false # if true, perform cut due to de-phasing
-fix_time = 0.0; # eval at fixed time = 0?
+fix_time = parsed_args["fixed_time"]; # eval at fixed time = 0?
 ode_err = 1e-5;
 errSlve = 1e-20;
 if parsed_args["trace_trajs"] == 1
