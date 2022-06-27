@@ -865,7 +865,7 @@ function ωGam(x, k, t, θm, ωPul, B0, rNS, gammaF)
     return ω_final
 end
 
-function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_max=8)
+function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_max=8, fix_time=0.0)
     batchsize = 2;
     over_cnt = zeros(batchsize)
 
@@ -886,7 +886,7 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_m
     x0_all= [x1 .* cos.(-ϕi) .* cos.(-θi) .+ x2 .* sin.(-ϕi) x2 .* cos.(-ϕi) .- x1 .* sin.(-ϕi) .* cos.(-θi) x1 .* sin.(-θi)];
     x_axion = [transpose(x0_all[i,:]) .+ transpose(vvec_all[i,:]) .* tt_ax[:] for i in 1:batchsize];
 
-    cxing_st = [get_crossings(log.(GJ_Model_ωp_vec(x_axion[i], 0.0, θm, ωPul, B0, rNS)) .- log.(Mass_a)) for i in 1:batchsize];
+    cxing_st = [get_crossings(log.(GJ_Model_ωp_vec(x_axion[i], fix_time, θm, ωPul, B0, rNS)) .- log.(Mass_a)) for i in 1:batchsize];
     cxing = [apply(cxing_st[i], tt_ax) for i in 1:batchsize];
     
     randInx = [rand(1:n_max) for i in 1:batchsize];
@@ -922,7 +922,7 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_m
         t_new_arr = LinRange(- abs.(tt_ax[3] - tt_ax[1]), abs.(tt_ax[3] - tt_ax[1]), 100);
         xpos_proj = [xpos[i] .+ vvec_full[i] .* t_new_arr[:] for i in 1:numX];
 
-        cxing_st = [get_crossings(log.(GJ_Model_ωp_vec(xpos_proj[i], 0.0, θm, ωPul, B0, rNS)) .- log.(Mass_a)) for i in 1:numX];
+        cxing_st = [get_crossings(log.(GJ_Model_ωp_vec(xpos_proj[i], fix_time, θm, ωPul, B0, rNS)) .- log.(Mass_a)) for i in 1:numX];
         cxing = [apply(cxing_st[i], t_new_arr) for i in 1:numX];
         indx_cx = [if length(cxing[i]) .> 0 i else -1 end for i in 1:numX];
         indx_cx_cut = indx_cx[indx_cx .> 0];
@@ -981,8 +981,8 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_m
         n_fails = sum(fails);
         if n_fails > 0
             
-            ωpLi2 = [if fails[i] == 1 Mass_a .- GJ_Model_ωp_vec(transpose(xpos_flat[i,:]) .+ transpose(vvec_flat[i,:]) .* t_new_arr[:], [0.0], θm, ωPul, B0, rNS) else -1 end for i in 1:ntrajs];
-            # ωpLi2 = [if fails[i] == 1 Mass_a .- GJ_Model_ωp_vec(xpos_flat[i,:] .+ vvec_flat[i,:] .* t_new_arr[:], [0.0], θm, ωPul, B0, rNS) else -1 end for i in 1:ntrajs];
+            ωpLi2 = [if fails[i] == 1 Mass_a .- GJ_Model_ωp_vec(transpose(xpos_flat[i,:]) .+ transpose(vvec_flat[i,:]) .* t_new_arr[:], [fix_time], θm, ωPul, B0, rNS) else -1 end for i in 1:ntrajs];
+            # ωpLi2 = [if fails[i] == 1 Mass_a .- GJ_Model_ωp_vec(xpos_flat[i,:] .+ vvec_flat[i,:] .* t_new_arr[:], [fix_time], θm, ωPul, B0, rNS) else -1 end for i in 1:ntrajs];
 
             t_new = [if length(ωpLi2[i]) .> 1 t_new_arr[findall(x->x==ωpLi2[i][ωpLi2[i] .> 0][argmin(ωpLi2[i][ωpLi2[i] .> 0])], ωpLi2[i])][1] else -1e6 end for i in 1:length(ωpLi2)];
             t_new = t_new[t_new .> -1e6];
@@ -1067,7 +1067,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
     xpos_flat = zeros(batchsize, 3);
     R_sample = zeros(batchsize);
     mcmc_weights = zeros(batchsize);
-    times_pts = zeros(batchsize);
+    times_pts = ones(batchsize) .* fix_time;
     filled_positions = false;
     fill_indx = 1;
     Ncx_max = 1;
@@ -1078,7 +1078,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
         while !filled_positions
             
-            xv, Rv, numV, weights = RT.find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS, n_max=n_maxSample)
+            xv, Rv, numV, weights = RT.find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS, n_max=n_maxSample, fix_time=fix_time)
             f_inx += 2
             
             if numV == 0
