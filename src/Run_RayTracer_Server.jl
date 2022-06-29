@@ -212,6 +212,9 @@ function combine_files(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, NS_vel
     if theta_cut_trajs
         fileN *= "_thetaCN_"
     end
+    if fix_time != Nothing
+        fileN *= "_fixed_time_"*string(fix_time);
+    end
     fileN *= "_"*file_tag*"_.npz";
     npzwrite(fileN, hold);
     
