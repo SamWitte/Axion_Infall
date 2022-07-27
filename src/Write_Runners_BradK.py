@@ -3,10 +3,10 @@ import numpy as np
 import random
 
 
-file_Load_Brad = np.load("")
+file_Load_Brad = np.loadtxt("Brad_K_Runs/Interaction_params_PL_AScut_ma_41_564mueV_M31_delta_p.txt")
 
 
-MassA = 2.6e-5
+MassA = 4.15e-5 # eV
 Axg = 1e-14
 
 Num_RUN = 50
@@ -19,34 +19,49 @@ B0_List=[]
 ThetaM_List=[]
 rotW_List=[]
 
+cnt = 0
+
+def test_plamsaF(B, P, mass):
+    op = 69.2 * np.sqrt(2) * np.sqrt(B / 1e14 / P) * 1e-6 # eV
+    if op  < mass:
+        return False
+    else:
+        return True
+
+
+
 for i in range(Num_RUN):
-    B0, P, ThM, Age, xx, yy, zz, MC_Den, MC_Rad, b, velNS = file_Load_Brad[i, :]
-    
-    
-    NS_Vel_T_list.append(np.arccos(1.0 - 2.0 * random.rand())])
-    NS_Vel_M_list.append(velNS * 3.086e13 / 2.998e5) # unitless
+    B0, P, ThM, Age, xx, yy, zz, MC_Den, MC_Rad, MC_Mass, b, velNS = file_Load_Brad[i, :]
+    print(Age, B0, P)
+    if test_plamsaF(B0, P, MassA):
+        NS_Vel_T_list.append(np.arccos(1.0 - 2.0 * random.random()))
+        NS_Vel_M_list.append(velNS * 3.086e13 / 2.998e5) # unitless
 
-    Mass = MC_Rad**3 * 4*np.pi * MC_Den / 3 # solar masses
-    M_MC_list.append(Mass)
-    R_MC_list.append(MC_Rad * 3.086e13) # km
-    is_AS_list.append(0)
+        # Mass = MC_Rad**3 * 4*np.pi * MC_Den / 3 # solar masses
+        M_MC_list.append(MC_Mass)
+        R_MC_list.append(MC_Rad * 3.086e13) # km
+        is_AS_list.append(0)
 
-    B0_List=[B0]
-    ThetaM_List=[ThM]
-    rotW_List=[2*np.pi / P]
-
+        B0_List.append(B0)
+        ThetaM_List.append(ThM)
+        rotW_List.append(2*np.pi / P)
+        cnt += 1
+    else:
+        print("fail.... \n")
+        
 Trajs = 100000
 trace_trajs = 1
 theta_cut_trajs = 1
 tagF = "_PL_"
+fix_time = 0.0
 
 fileTag = "Server_Runner_"
 
 total_runners = Num_RUN
 file_out = []
-for i in range(total_runners):
+for i in range(cnt):
 
-    file_out_HOLD = "#!/bin/bash \m"
+    file_out_HOLD = "#!/bin/bash \n"
     file_out_HOLD += "#SBATCH --time=100:00:00 \n"
     file_out_HOLD += "#SBATCH --mem=90G \n"
     file_out_HOLD += "#SBATCH --nodes=1 \n"
@@ -71,6 +86,8 @@ for i in range(total_runners):
     file_out_HOLD += "theta_cut_trajs={:.0f} \n".format(theta_cut_trajs)
     file_out_HOLD += "Trajs={:.0f} \n".format(Trajs)
     
+    file_out_HOLD += "fix_time={:.2f} \n".format(fix_time)
+    
     file_out_HOLD += "tagF=\"" + tagF + "\" \n"
     
     file_out_HOLD += "declare -i memPerjob \n"
@@ -88,7 +105,7 @@ for i in range(total_runners):
 
 
 
-for i in range(total_runners):
+for i in range(cnt):
     fout=open(fileTag + '{}.sh'.format(i), 'w')
     
     fout.write('{}\n'.format(file_out[i]))
