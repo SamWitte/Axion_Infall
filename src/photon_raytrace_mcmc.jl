@@ -239,7 +239,6 @@ function jacobian_fv(x_in, vel_loc)
     ϕ = atan.(x_in[2], x_in[1])
     θ = acos.(x_in[3] ./ rmag)
     
-    
     dvXi_dV = grad(v_infinity(θ, ϕ, rmag, seed(vel_loc), v_comp=1));
     dvYi_dV = grad(v_infinity(θ, ϕ, rmag, seed(vel_loc), v_comp=2));
     dvZi_dV = grad(v_infinity(θ, ϕ, rmag, seed(vel_loc), v_comp=3));
@@ -256,7 +255,6 @@ function v_infinity(θ, ϕ, r, vel_loc; v_comp=1, Mass_NS=1)
 
     v_inf = sqrt.(vel_loc_mag.^2 .- (2 .* GMr)); # unitless
     rhat = [sin.(θ) .* cos.(ϕ) sin.(θ) .* sin.(ϕ) cos.(θ)]
-    
     
     denom = v_inf.^2 .+ GMr .- v_inf .* sum(vel_loc .* rhat);
     if v_comp == 1
@@ -1115,7 +1113,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
             end
         end
         filled_positions = false;
-
+        
         rmag = sqrt.(sum(xpos_flat .^ 2, dims=2));
         ϕ = atan.(view(xpos_flat, :, 2), view(xpos_flat, :, 1))
         θ = acos.(view(xpos_flat, :, 3)./ rmag)
@@ -1158,7 +1156,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
                 end
                 cnt_careful += 1
                 if cnt_careful > 50
-                    print("failing here at pt 1....")
+                    # print("failing here at pt 1....")
                     mcmc_weightsFull[i] *= 0.0
                     fail_first = true
                     break;
@@ -1183,7 +1181,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
                 end
                 cnt_careful += 1
                 if cnt_careful > 50
-                    print("failing here at pt 2....")
+                    # print("failing here at pt 2....")
                     mcmc_weightsFull[i+length(rmag)] *= 0.0
                     fail_second = true
                     break;
@@ -1349,7 +1347,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         # compute energy dispersion (ωf - ωi) / ωi
         passA = [func_use, MagnetoVars];
         # Δω = (RT.dwdt_vec(xF, kF, ttΔω, passA) ) ./ Mass_a .+ vF_AX.^2 ./ 2.0;
-        Δω = tF[:, end] ./ Mass_a .+ sqrt.(sum(vF_AX.^2, dims=2)) ./ 2.0;
+        Δω = tF[:, end] # ./ Mass_a .+ sqrt.(sum(vF_AX.^2, dims=2)) ./ 2.0;
         
         
         opticalDepth = RT.tau_cyc(xF, kF, ttΔω, passA, Mass_a);
