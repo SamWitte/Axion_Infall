@@ -863,17 +863,20 @@ function ωGam(x, k, t, θm, ωPul, B0, rNS, gammaF)
     return ω_final
 end
 
-function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_max=8, fix_time=0.0)
-    batchsize = 2;
-    over_cnt = zeros(batchsize)
+function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_max=8, batchsize=2)
 
     tt_ax = LinRange(-2*maxR, 2*maxR, ntimes_ax); # Not a real physical time -- just used to get trajectory crossing
+    
     
     # randomly sample angles θ, ϕ
     θi = acos.(1.0 .- 2.0 .* rand(batchsize));
     ϕi = rand(batchsize) .* 2π;
-    
     vvec_all = [sin.(θi) .* cos.(ϕi) sin.(θi) .* sin.(ϕi) cos.(θi)];
+    
+    θi_loc = acos.(1.0 .- 2.0 .* rand(batchsize));
+    ϕi_loc = rand(batchsize) .* 2π;
+    vvec_loc = [sin.(θi_loc) .* cos.(ϕi_loc) sin.(θi_loc) .* sin.(ϕi_loc) cos.(θi_loc)];
+    
     # randomly sample x1 and x2 (rotated vectors in disk perpendicular to (r=1, θ, ϕ) with max radius R)
     ϕRND = rand(batchsize) .* 2π;
     rRND = sqrt.(rand(batchsize)) .* maxR; # standard flat sampling
@@ -883,51 +886,67 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_m
     # rotate using Inv[EurlerMatrix(ϕi, θi, 0)] on vector (x1, x2, 0)
     x0_all= [x1 .* cos.(-ϕi) .* cos.(-θi) .+ x2 .* sin.(-ϕi) x2 .* cos.(-ϕi) .- x1 .* sin.(-ϕi) .* cos.(-θi) x1 .* sin.(-θi)];
     x_axion = [transpose(x0_all[i,:]) .+ transpose(vvec_all[i,:]) .* tt_ax[:] for i in 1:batchsize];
+    
+    
+    vIfty = 220.0 .+ rand(batchsize, 3) .* 1.0e-1;
+    vIfty_mag = sqrt.(sum(vIfty.^2, dims=2));
+    gammaA = 1 ./ sqrt.(1.0 .- (vIfty_mag ./ c_km).^2 )
+    erg_inf_ini = Mass_a .* sqrt.(1 .+ (vIfty_mag ./ c_km .* gammaA).^2)
+    Mass_NS = 1.0
 
-    cxing_st = [get_crossings(log.(GJ_Model_ωp_vec(x_axion[i], fix_time, θm, ωPul, B0, rNS)) .- log.(Mass_a)) for i in 1:batchsize];
+    
+    cxing_st = [get_crossings(log.(GJ_Model_ωp_vec(x_axion[i], 0.0, θm, ωPul, B0, rNS)) .- log.(Mass_a)) for i in 1:batchsize];
+    
     cxing = [apply(cxing_st[i], tt_ax) for i in 1:batchsize];
+   
     
     randInx = [rand(1:n_max) for i in 1:batchsize];
     
     # see if keep any crossings
     indx_cx = [if length(cxing[i]) .>= randInx[i] i else -1 end for i in 1:batchsize];
-    
-    # indx_cx = [if length(cxing[i]) .> 0 i else -1 end for i in 1:batchsize];
+
 
     # remove those which dont
     randInx = randInx[indx_cx .> 0];
     indx_cx_cut = indx_cx[indx_cx .> 0];
 
-    # randInx = [rand(1:length(cxing[indx_cx_cut][i])) for i in 1:length(indx_cx_cut)];
-    
     cxing_short = [cxing[indx_cx_cut][i][randInx[i]] for i in 1:length(indx_cx_cut)];
     weights = [length(cxing[indx_cx_cut][i]) for i in 1:length(indx_cx_cut)];
-
-
+    
+    
     numX = length(cxing_short);
     R_sample = vcat([rRND[indx_cx_cut][i] for i in 1:numX]...);
-
-    # print(cxing, "\t", cxing_short, "\t", indx_cx_cut, "\t", randInx, "\n")
+    erg_inf_ini = vcat([erg_inf_ini[indx_cx_cut][i] for i in 1:numX]...);
+    
+    
+    vvec_loc = vvec_loc[indx_cx_cut, :];
+    vIfty_mag = vcat([vIfty_mag[indx_cx_cut][i] for i in 1:numX]...);
     
     if numX != 0
         
-        # print(x0_all, "\t", cxing_short, "\t", indx_cx_cut, "\t", randInx,"\n")
         xpos = [transpose(x0_all[indx_cx_cut[i], :]) .+ transpose(vvec_all[indx_cx_cut[i], :]) .* cxing_short[i] for i in 1:numX];
         vvec_full = [transpose(vvec_all[indx_cx_cut[i],:]) .* ones(1, 3) for i in 1:numX];
         
-
-        # print(x0_all, "\t", xpos, "\t", vvec_full, "\t", R_sample, "\n")
+        
         t_new_arr = LinRange(- abs.(tt_ax[3] - tt_ax[1]), abs.(tt_ax[3] - tt_ax[1]), 100);
         xpos_proj = [xpos[i] .+ vvec_full[i] .* t_new_arr[:] for i in 1:numX];
 
-        cxing_st = [get_crossings(log.(GJ_Model_ωp_vec(xpos_proj[i], fix_time, θm, ωPul, B0, rNS)) .- log.(Mass_a)) for i in 1:numX];
+        
+        
+        
+        cxing_st = [get_crossings(log.(GJ_Model_ωp_vec(xpos_proj[i], 0.0, θm, ωPul, B0, rNS)) .- log.(Mass_a)) for i in 1:numX];
         cxing = [apply(cxing_st[i], t_new_arr) for i in 1:numX];
+        
         indx_cx = [if length(cxing[i]) .> 0 i else -1 end for i in 1:numX];
         indx_cx_cut = indx_cx[indx_cx .> 0];
         R_sample = R_sample[indx_cx_cut];
+        erg_inf_ini = erg_inf_ini[indx_cx_cut];
+        vvec_loc = vvec_loc[indx_cx_cut, :];
+        vIfty_mag = vIfty_mag[indx_cx_cut];
+        
         numX = length(indx_cx_cut);
         if numX == 0
-            return 0.0, 0.0, 0, 0.0, 0.0
+            return 0.0, 0.0, 0, 0.0, 0.0, 0.0
         end
 
 
@@ -935,78 +954,92 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_m
         randInx = [rand(1:length(cxing[indx_cx_cut][i])) for i in 1:numX];
         cxing = [cxing[indx_cx_cut][i][randInx[i]] for i in 1:numX];
         vvec_flat = reduce(vcat, vvec_full);
-        # print(xpos, "\t", vvec_full, "\t", cxing, "\n")
+       
         xpos = [xpos[indx_cx_cut[i],:] .+ vvec_full[indx_cx_cut[i],:] .* cxing[i] for i in 1:numX];
         vvec_full = [vvec_full[indx_cx_cut[i],:] for i in 1:numX];
 
-        
-        vvec_flat = vcat(vvec_full...);
-        xpos_flat = vcat(xpos...);
-        reducedall = false
-        while !reducedall
-            try
-                dim2 = size(vvec_flat)[2]
-                if dim2 == 3
-                    reducedall = true
-                end
-            catch
-                vvec_flat = vcat(vvec_flat...);
-            end
+        try
+            xpos_flat = reduce(vcat, xpos);
+        catch
+            print("why is this a rare fail? \t", xpos, "\n")
         end
-        reducedall = false
-        while !reducedall
-            try
-                dim2 = size(xpos_flat)[2]
-                if dim2 == 3
-                    reducedall = true
-                end
-            catch
-                xpos_flat = vcat(xpos_flat...);
-            end
+        try
+            xpos_flat = reduce(vcat, xpos_flat);
+            vvec_flat = reduce(vcat, vvec_full);
+        catch
+            print("for some reason reduce fail... ", vvec_full, "\t", xpos_flat, "\n")
+            vvec_flat = vvec_full;
         end
 
        
         rmag = sqrt.(sum(xpos_flat .^ 2, dims=2));
-        indx_r_cut = rmag .> (rNS + 0.0); #
-
+        indx_r_cut = rmag .> rNS; #
+        # print(xpos_flat, "\t", vvec_flat,"\t", R_sample, "\t", indx_r_cut, "\n")
         if sum(indx_r_cut) - length(xpos_flat[:,1 ]) < 0
             xpos_flat = xpos_flat[indx_r_cut[:], :]
             vvec_flat = vvec_flat[indx_r_cut[:], :]
             R_sample = R_sample[indx_r_cut[:]]
+            erg_inf_ini = erg_inf_ini[indx_r_cut[:]];
+            vvec_loc = vvec_loc[indx_r_cut[:], :];
+            vIfty_mag = vIfty_mag[indx_r_cut[:]];
+        
             numX = length(xpos_flat);
             rmag = sqrt.(sum(xpos_flat .^ 2, dims=2));
         end
         
         ntrajs = length(R_sample)
         if ntrajs == 0
-            return 0.0, 0.0, 0, 0.0
+            return 0.0, 0.0, 0, 0.0, 0.0, 0.0
         end
         
-        # print("here...\t", xpos_flat, "\t", R_sample,"\n")
-        ωpL = GJ_Model_ωp_vec(xpos_flat, zeros(ntrajs), θm, ωPul, B0, rNS)
-        vmag = sqrt.(2 * 132698000000.0 .* Mass_NS ./ rmag) ; # km/s
-        erg_ax = sqrt.( Mass_a^2 .+ (Mass_a .* vmag / 2.998e5) .^2 );
         
+        # Renormalize loc velocity and solve asymptotic
+        
+        vmag_loc = sqrt.(vIfty_mag.^2 .+ 2 .* GNew .* Mass_NS ./ rmag) ./ c_km
+       
+        v0 = vvec_loc .* vmag_loc
+        
+        vIfty = zeros(ntrajs, 3)
+        ϕ = atan.(xpos_flat[:, 2], xpos_flat[:, 1])
+        θ = acos.(xpos_flat[:, 3] ./ rmag)
+       
+        for i in 1:ntrajs
+            for j in 1:3
+                vIfty[i,j] = v_infinity(θ[i], ϕ[i], rmag[i], v0[i, :]; v_comp=j, Mass_NS=Mass_NS)
+            end
+        end
+        
+
+        ωpL = GJ_Model_ωp_vec(xpos_flat, zeros(ntrajs), θm, ωPul, B0, rNS)
+        if ntrajs > 1
+            vtot = sqrt.(sum(v0.^2, dims=2))
+        else
+            vtot = sqrt.(sum(v0.^2))
+        end
+        gamF = 1 ./ sqrt.(1.0 .- vtot.^2)
+        erg_ax = Mass_a .* sqrt.(1.0 .+ vtot.^2) .* gamF ;
+        
+      
         # make sure not in forbidden region....
         fails = ωpL .> erg_ax;
         n_fails = sum(fails);
-        
         if n_fails > 0
+            print("fails... \n")
+            ωpLi2 = [if fails[i] == 1 Mass_a .- GJ_Model_ωp_vec(transpose(xpos_flat[i,:]) .+ transpose(vvec_flat[i,:]) .* t_new_arr[:], [0.0], θm, ωPul, B0, rNS) else -1 end for i in 1:ntrajs];
+            # ωpLi2 = [if fails[i] == 1 Mass_a .- GJ_Model_ωp_vec(xpos_flat[i,:] .+ vvec_flat[i,:] .* t_new_arr[:], [0.0], θm, ωPul, B0, rNS) else -1 end for i in 1:ntrajs];
 
-            ωpLi2 = [if fails[i] == 1 Mass_a .- GJ_Model_ωp_vec(transpose(xpos_flat[i,:]) .+ transpose(vvec_flat[i,:]) .* t_new_arr[:], [fix_time], θm, ωPul, B0, rNS) else -1 end for i in 1:ntrajs];
             t_new = [if length(ωpLi2[i]) .> 1 t_new_arr[findall(x->x==ωpLi2[i][ωpLi2[i] .> 0][argmin(ωpLi2[i][ωpLi2[i] .> 0])], ωpLi2[i])][1] else -1e6 end for i in 1:length(ωpLi2)];
             t_new = t_new[t_new .> -1e6];
             xpos_flat[fails[:],:] .+= vvec_flat[fails[:], :] .* t_new;
 
         end
         # print(xpos_flat, "\t")
-        return xpos_flat, R_sample, ntrajs, weights
+        return xpos_flat, R_sample, ntrajs, weights, v0, vIfty
     else
-        return 0.0, 0.0, 0, 0.0
+        return 0.0, 0.0, 0, 0.0, 0.0, 0.0
     end
     
 end
-
 
 end
 
@@ -1077,18 +1110,21 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
     xpos_flat = zeros(batchsize, 3);
     R_sample = zeros(batchsize);
     mcmc_weights = zeros(batchsize);
+    velNorm_flat = zeros(batchsize, 3);
+    vIfty = zeros(batchsize, 3);
     times_pts = ones(batchsize) .* fix_time;
     filled_positions = false;
     fill_indx = 1;
     Ncx_max = 1;
     count_success = 0;
+    small_batch = 2;
 
 
     while photon_trajs < desired_trajs
 
         while !filled_positions
             
-            xv, Rv, numV, weights = RT.find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS, n_max=n_maxSample, fix_time=fix_time)
+            xv, Rv, numV, weights, vvec_in, vIfty_in = RT.find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_max=n_maxSample, batchsize=small_batch)
             f_inx += 2
             
             if numV == 0
@@ -1102,6 +1138,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
                     xpos_flat[fill_indx, :] .= xv[i, :];
                     R_sample[fill_indx] = Rv[i];
                     mcmc_weights[fill_indx] = n_maxSample;
+                    velNorm_flat[fill_indx, :] .= vvec_in[i, :];
+                    vIfty[fill_indx, :] .= vIfty_in[i, :];
                     fill_indx += 1
                     
                 end
@@ -1156,7 +1194,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
                 end
                 cnt_careful += 1
                 if cnt_careful > 50
-                    # print("failing here at pt 1....")
+                    print("failing here at pt 1....")
                     mcmc_weightsFull[i] *= 0.0
                     fail_first = true
                     break;
@@ -1181,7 +1219,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
                 end
                 cnt_careful += 1
                 if cnt_careful > 50
-                    # print("failing here at pt 2....")
+                    print("failing here at pt 2....")
                     mcmc_weightsFull[i+length(rmag)] *= 0.0
                     fail_second = true
                     break;
