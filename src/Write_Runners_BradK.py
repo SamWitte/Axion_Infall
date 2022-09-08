@@ -3,13 +3,14 @@ import numpy as np
 import random
 
 
-file_Load_Brad = np.loadtxt("Brad_K_Runs/Interaction_params_PL_AScut_ma_41_564mueV_M31_delta_p.txt")
+file_Load_Brad = np.loadtxt("../../M31_encounter_data/Stripping_Models/Interaction_params_PL_M_AMC_1.00e-14_M31_youngNS_delta_1.txt")
 
 
 MassA = 4.15e-5 # eV
+#MassA = 3.51e-5 # eV
 Axg = 1e-14
 
-Num_RUN = 50
+Num_RUN = 100
 NS_Vel_T_list = []
 NS_Vel_M_list=[]
 M_MC_list=[]
@@ -35,7 +36,7 @@ for i in range(Num_RUN):
     print(Age, B0, P)
     if test_plamsaF(B0, P, MassA):
         NS_Vel_T_list.append(np.arccos(1.0 - 2.0 * random.random()))
-        NS_Vel_M_list.append(velNS * 3.086e13 / 2.998e5) # unitless
+        NS_Vel_M_list.append(velNS * 3.086e13) # km/s
 
         # Mass = MC_Rad**3 * 4*np.pi * MC_Den / 3 # solar masses
         M_MC_list.append(MC_Mass)
@@ -55,6 +56,7 @@ theta_cut_trajs = 1
 tagF = "_PL_"
 fix_time = 0.0
 
+print("frac survive: {:.2e}".format(float(cnt) / Num_RUN))
 fileTag = "Server_Runner_"
 
 total_runners = Num_RUN
