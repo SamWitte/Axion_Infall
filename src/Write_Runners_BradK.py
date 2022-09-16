@@ -3,14 +3,14 @@ import numpy as np
 import random
 
 
-file_Load_Brad = np.loadtxt("../../M31_encounter_data/Stripping_Models/Interaction_params_PL_M_AMC_1.00e-14_M31_youngNS_delta_1.txt")
+file_Load_Brad = np.loadtxt("../../../M31_encounter_data/Stripping_Models/Interaction_params_PL_M_AMC_1.00e-14_M31_youngNS_delta_1.txt")
 
 
-MassA = 4.15e-5 # eV
-#MassA = 3.51e-5 # eV
+#MassA = 4.15e-5 # eV
+MassA = 3.51e-5 # eV
 Axg = 1e-14
 
-Num_RUN = 100
+Num_RUN = 10
 NS_Vel_T_list = []
 NS_Vel_M_list=[]
 M_MC_list=[]
