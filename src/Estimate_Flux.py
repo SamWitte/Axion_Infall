@@ -121,10 +121,8 @@ def get_flux(mass, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752):
             time_sample = random.random() * total_time_length # peak encounter, days
             
             if (((time_sample - transit_time / 2 * 1.15741e-5) < (central_obs_window - 1))and((time_sample + transit_time / 2 * 1.15741e-5) > (central_obs_window + 1))):
-                # file_use, den = eval_density_3d(fileList[i], b_param * 3.086e+13, (time_sample - central_obs_window) / 1.15741e-5 , velNS, is_axionstar=False, is_nfw=False)
-                print(b_param, velNS)
-                file_use, den = eval_density_3d(fileList[i], b_param * 3.086e+13, 0.0, v_Theta, is_axionstar=False, is_nfw=False)
-                print(np.median(den))
+                file_use, den = eval_density_3d(fileList[i], b_param * 3.086e+13, (time_sample - central_obs_window) / 1.15741e-5 , v_Theta, is_axionstar=False, is_nfw=False)
+                # file_use, den = eval_density_3d(fileList[i], b_param * 3.086e+13, 0.0, v_Theta, is_axionstar=False, is_nfw=False)
                 num_in_window += 1
             else:
                 continue
@@ -132,11 +130,10 @@ def get_flux(mass, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752):
             file_use[:, 5] *= den
             ThetaVals = file_use[:, 2]
             
-            # vals = diff_power_curve(file_use, ThetaVals, mass, period, binTot=binTot, eps_theta=eps_theta)
-            
-            # randView = int(random.random())
-            # flux_density = vals[randView, 1] / bandwidth / dist**2 * (1/3.086e+21)**2  * 1.60218e-12 # erg / ( s * Hz * cm^2)
-            flux_density = mass * np.sum(file_use[:,5]) / (4*np.pi) / bandwidth / dist**2 * (1/3.086e+21)**2  * 1.60218e-12 # erg / ( s * Hz * cm^2)
+            vals = diff_power_curve(file_use, ThetaVals, mass, period, binTot=binTot, eps_theta=eps_theta)
+            randView = int(random.random() * binTot)
+            flux_density = vals[randView, 1] / bandwidth / dist**2 * (1/3.086e+21)**2  * 1.60218e-12 # erg / ( s * Hz * cm^2)
+            # flux_density = mass * np.sum(file_use[:,5]) / (4*np.pi) / bandwidth / dist**2 * (1/3.086e+21)**2  * 1.60218e-12 # erg / ( s * Hz * cm^2)
             flux_density *= 1.0e26 # mJy
             flux_density_list.append(flux_density)
     
