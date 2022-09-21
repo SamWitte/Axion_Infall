@@ -74,7 +74,7 @@ def get_flux(mass, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752):
     eff_rate = 0.837425 * 0.065 # effective interaction rate / day
     
 
-    dirN = "results/"
+    dirN = "results"
     BradK_File = np.loadtxt("../../M31_encounter_data/Stripping_Models/Interaction_params_PL_M_AMC_1.00e-14_M31_youngNS_delta_1.txt")
     properties_list = []
     cnt = 0
@@ -89,7 +89,7 @@ def get_flux(mass, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752):
     tot_NSs = 10000
     properties_list = np.asarray(properties_list)
     
-    fileList = glob.glob(dirN+"/*"+str(mass)+"*")
+    fileList = glob.glob(dirN+"/*")
     flux_density_list = []
     total_time_length = tot_NSs / eff_rate # days to simulate
     
@@ -116,6 +116,7 @@ def get_flux(mass, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752):
             
             if (((time_sample - transit_time / 2 * 1.15741e-5) < (central_obs_window - 1))and((time_sample + transit_time / 2 * 1.15741e-5) > (central_obs_window + 1))):
                 # file_use, den = eval_density_3d(fileList[i], b_param * 3.086e+13, (time_sample - central_obs_window) / 1.15741e-5 , velNS, is_axionstar=False, is_nfw=False)
+                print(b_param, velNS)
                 file_use, den = eval_density_3d(fileList[i], b_param * 3.086e+13, 0.0, velNS, is_axionstar=False, is_nfw=False)
                 
                 num_in_window += 1
