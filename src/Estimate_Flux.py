@@ -59,7 +59,13 @@ def extract_file_params(fileN):
     tag1 = fileN.find(fft) + len(fft)
     tag2 = fileN.find('_NS_Theta')
     v_amc = float(fileN[tag1:tag2])
-    return mass, period, thetaM, B0, M_amc, R_amc, v_amc
+    
+    fft = "_NS_Theta_"
+    tag1 = fileN.find(fft) + len(fft)
+    tag2 = fileN.find('_Mmc_')
+    v_Theta = float(fileN[tag1:tag2])
+    
+    return mass, period, thetaM, B0, M_amc, R_amc, v_amc, v_Theta
     
 def test_plamsaF(B, P, mass):
     op = 69.2 * np.sqrt(2) * np.sqrt(B / 1e14 / P) * 1e-6 # eV
@@ -101,7 +107,7 @@ def get_flux(mass, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752):
         for idx in range(tot_NSs):
             
             i = idx % len(fileList)
-            mass, period, thetaM, B0, MC_Mass, MC_R, velNS  = extract_file_params(fileList[i])
+            mass, period, thetaM, B0, MC_Mass, MC_R, velNS, v_Theta  = extract_file_params(fileList[i])
             
             indx_g = int(random.random() * len(properties_list[:,0]))
             
@@ -117,8 +123,8 @@ def get_flux(mass, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752):
             if (((time_sample - transit_time / 2 * 1.15741e-5) < (central_obs_window - 1))and((time_sample + transit_time / 2 * 1.15741e-5) > (central_obs_window + 1))):
                 # file_use, den = eval_density_3d(fileList[i], b_param * 3.086e+13, (time_sample - central_obs_window) / 1.15741e-5 , velNS, is_axionstar=False, is_nfw=False)
                 print(b_param, velNS)
-                file_use, den = eval_density_3d(fileList[i], b_param * 3.086e+13, 0.0, velNS, is_axionstar=False, is_nfw=False)
-                
+                file_use, den = eval_density_3d(fileList[i], b_param * 3.086e+13, 0.0, v_Theta, is_axionstar=False, is_nfw=False)
+                print(np.median(den))
                 num_in_window += 1
             else:
                 continue
