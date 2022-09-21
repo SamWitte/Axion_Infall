@@ -5,29 +5,32 @@ import sys
 axion_star_profile = np.load("/Users/samuelwitte/Dropbox/Magnetized_Plasma/Axion_Infall/src/AS_profile_2R99.npy")
 AS_prof = interp1d(np.linspace(0,1, len(axion_star_profile)), axion_star_profile, fill_value=0.0, bounds_error=False)
 
-def AMC_CrossingTime(b, M, v_NS, rho_amc):
+def AMC_CrossingTime(b, M, v_NS, R_amc):
     # assume b [km], M [solar mass], v_NS [vector unitless]
-    R_amc = (3*M / (4*np.pi * rho_amc))**(1/3) * 3.086*10**13 #	km
+    # R_amc = (3*M / (4*np.pi * rho_amc))**(1/3) * 3.086*10**13 #	km
     bnorm = np.sqrt(np.sum(b**2))
     delD = np.sqrt(R_amc**2 - bnorm**2)  # b in km
     return 2 * delD / np.sqrt(np.sum(v_NS**2)) / 2.998e5 # s
 
-def AMC_profile(r, M, rho_amc, R_amc, is_axionstar=False):
+def AMC_profile(r, M, rho_amc, R_amc, is_axionstar=False, is_nfw=True):
     if not is_axionstar:
         # rho_amc = M/pc^3
-        R_amc = (3*M / (4*np.pi * rho_amc))**(1/3) * 3.086*10**13 #	km
-        c = 100
+        # R_amc = (3*M / (4*np.pi * rho_amc))**(1/3) * 3.086*10**13 #	km
+        c = 1e2
         fnwf = np.log(1+c) - c / (1+c)
-        rs = (M / (4*np.pi * rho_amc * fnwf))**(1/3) * 3.086*10**13 # km
-        
-        rho_0 = rho_amc * (R_amc / rs)**(9.0/4.0) / 4.0
-        
+       
         density = np.zeros(len(r))
-        density[r < R_amc] = rho_0 * (rs / r[r < R_amc]) ** (9.0 / 4.0)
-        # if r < R_amc:
-        #     density = rho_0 * (rs/r) ** (9.0 / 4.0)
-        # else:
-        #    density = 0.0
+        if not is_nfw:
+            # rho_0 = rho_amc * (R_amc / rs)**(9.0/4.0) / 4.0
+            density[r < R_amc] = rho_amc * (R_amc / r[r < R_amc]) ** (9.0 / 4.0) / 4
+        else:
+            rs = R_amc / c
+            # rho_amc = M / (4*np.pi * (rs /3.086e13)**3 * fnwf) # M_odot / pc^3
+            # rs = (M / (4*np.pi * rho_amc * fnwf))**(1/3)
+            rho_amc = -M * (rs + R_amc) / (4*np.pi * (rs /  3.086e13)**3 * (R_amc + (R_amc + rs)*np.log(rs/(rs+R_amc))))
+            
+            density[r < R_amc] = rho_amc / (r[r < R_amc] / rs)  / (1 + (r[r < R_amc] / rs) )**2
+        
         density *= 37.96
         return density # units: GeV / cm^3
     else:
@@ -135,7 +138,7 @@ def get_t0_point(fileN, b, NS_vel_T_true):
     # return init_pos, dist_proj_vel, NS_vel, Mmc, R_amc, fileData
     return init_pos, rel_dist, NS_vel, Mmc, R_amc, fileData
 
-def eval_density_3d(fileN, b, t, NS_Vel_T, is_axionstar=False):
+def eval_density_3d(fileN, b, t, NS_Vel_T, is_axionstar=False, is_nfw=True):
     # given input file and impact parameter, return density-weighted raytracer output at time t
     # t [s]
     
@@ -152,9 +155,11 @@ def eval_density_3d(fileN, b, t, NS_Vel_T, is_axionstar=False):
     # rad_dist = np.sqrt(np.sum((dist_from_center - newDist_c)**2, axis=1)) # km
     # print(init_pos, dist_from_center, newDist_c, rad_dist)
     # print(np.min(rad_dist) / R_amc, np.max(rad_dist) / R_amc)
+    
     rho_amc = (3*Mmc / (4*np.pi * (R_amc / 3.086e13)**3))  #
-    print(np.min(rel_dist), np.max(rel_dist))
-    den = AMC_profile(rel_dist, Mmc, rho_amc, R_amc, is_axionstar=is_axionstar)
+    
+    # print(np.min(rel_dist), np.max(rel_dist))
+    den = AMC_profile(rel_dist, Mmc, rho_amc, R_amc, is_axionstar=is_axionstar, is_nfw=is_nfw)
     # fileData[:, 5] *= den # properly re-weight density terms
     return fileData, den
 
