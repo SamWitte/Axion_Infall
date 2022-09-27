@@ -1019,12 +1019,17 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_m
         gamF = 1 ./ sqrt.(1.0 .- vtot.^2)
         erg_ax = Mass_a .* sqrt.(1.0 .+ vtot.^2) .* gamF ;
         
+        try
+            xpos_flat = reduce(vcat, vvec_flat);
+        catch
+            print("reduced to max... \n");
+        end
       
         # make sure not in forbidden region....
         fails = ωpL .> erg_ax;
         n_fails = sum(fails);
         if n_fails > 0
-            print("fails... \n")
+            print("fails... \t", fails, "\n")
             print(transpose(xpos_flat[1,:]), "\t", transpose(vvec_flat[1,:]), "\n")
             print("shape \t", size(transpose(vvec_flat[1,:]) .* t_new_arr[:]), "\n")
             ωpLi2 = [if fails[i] == 1 Mass_a .- GJ_Model_ωp_vec(transpose(xpos_flat[i,:]) .+ transpose(vvec_flat[i,:]) .* t_new_arr[:], fix_time, θm, ωPul, B0, rNS) else -1 end for i in 1:ntrajs];
