@@ -1020,7 +1020,7 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_m
         erg_ax = Mass_a .* sqrt.(1.0 .+ vtot.^2) .* gamF ;
         
         try
-            xpos_flat = reduce(vcat, vvec_flat);
+            vvec_flat = reduce(vcat, vvec_flat);
         catch
             print("reduced to max... \n");
         end
