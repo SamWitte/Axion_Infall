@@ -863,7 +863,7 @@ function ωGam(x, k, t, θm, ωPul, B0, rNS, gammaF)
     return ω_final
 end
 
-function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_max=8, batchsize=2)
+function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_max=8, batchsize=2, fix_time=0.0)
 
     tt_ax = LinRange(-2*maxR, 2*maxR, ntimes_ax); # Not a real physical time -- just used to get trajectory crossing
     
@@ -895,7 +895,7 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_m
     Mass_NS = 1.0
 
     
-    cxing_st = [get_crossings(log.(GJ_Model_ωp_vec(x_axion[i], 0.0, θm, ωPul, B0, rNS)) .- log.(Mass_a)) for i in 1:batchsize];
+    cxing_st = [get_crossings(log.(GJ_Model_ωp_vec(x_axion[i], fix_time, θm, ωPul, B0, rNS)) .- log.(Mass_a)) for i in 1:batchsize];
     
     cxing = [apply(cxing_st[i], tt_ax) for i in 1:batchsize];
    
@@ -934,7 +934,7 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_m
         
         
         
-        cxing_st = [get_crossings(log.(GJ_Model_ωp_vec(xpos_proj[i], 0.0, θm, ωPul, B0, rNS)) .- log.(Mass_a)) for i in 1:numX];
+        cxing_st = [get_crossings(log.(GJ_Model_ωp_vec(xpos_proj[i], fix_time, θm, ωPul, B0, rNS)) .- log.(Mass_a)) for i in 1:numX];
         cxing = [apply(cxing_st[i], t_new_arr) for i in 1:numX];
         
         indx_cx = [if length(cxing[i]) .> 0 i else -1 end for i in 1:numX];
@@ -1025,8 +1025,8 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_m
         n_fails = sum(fails);
         if n_fails > 0
             print("fails... \n")
-            ωpLi2 = [if fails[i] == 1 Mass_a .- GJ_Model_ωp_vec(transpose(xpos_flat[i,:]) .+ transpose(vvec_flat[i,:]) .* t_new_arr[:], [0.0], θm, ωPul, B0, rNS) else -1 end for i in 1:ntrajs];
-            # ωpLi2 = [if fails[i] == 1 Mass_a .- GJ_Model_ωp_vec(xpos_flat[i,:] .+ vvec_flat[i,:] .* t_new_arr[:], [0.0], θm, ωPul, B0, rNS) else -1 end for i in 1:ntrajs];
+            ωpLi2 = [if fails[i] == 1 Mass_a .- GJ_Model_ωp_vec(transpose(xpos_flat[i,:]) .+ transpose(vvec_flat[i,:]) .* t_new_arr[:], [fix_time], θm, ωPul, B0, rNS) else -1 end for i in 1:ntrajs];
+            # ωpLi2 = [if fails[i] == 1 Mass_a .- GJ_Model_ωp_vec(xpos_flat[i,:] .+ vvec_flat[i,:] .* t_new_arr[:], [fix_time], θm, ωPul, B0, rNS) else -1 end for i in 1:ntrajs];
 
             t_new = [if length(ωpLi2[i]) .> 1 t_new_arr[findall(x->x==ωpLi2[i][ωpLi2[i] .> 0][argmin(ωpLi2[i][ωpLi2[i] .> 0])], ωpLi2[i])][1] else -1e6 end for i in 1:length(ωpLi2)];
             t_new = t_new[t_new .> -1e6];
@@ -1101,6 +1101,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
     if fix_time != Nothing
         file_tag *= "_fixed_time_"*string(fix_time);
+    else
+        fix_time = 0.0
     end
 
     file_tag *= "_odeErr_"*string(ode_err);
@@ -1124,7 +1126,7 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
 
         while !filled_positions
             
-            xv, Rv, numV, weights, vvec_in, vIfty_in = RT.find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_max=n_maxSample, batchsize=small_batch)
+            xv, Rv, numV, weights, vvec_in, vIfty_in = RT.find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_max=n_maxSample, batchsize=small_batch, fix_time=fix_time)
             f_inx += 2
             
             if numV == 0
@@ -1421,8 +1423,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 13] .= sln_k[:, 2]; # initial ky
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 14] .= sln_k[:, 3]; # initial kz
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 15] .= opticalDepth[:]; # optical depth
-        SaveAll[photon_trajs:photon_trajs + num_photons - 1, 16] .= weightC[:]; # optical depth
-        SaveAll[photon_trajs:photon_trajs + num_photons - 1, 17] .= Prob[:]; # optical depth
+        SaveAll[photon_trajs:photon_trajs + num_photons - 1, 16] .= weightC[:]; #
+        SaveAll[photon_trajs:photon_trajs + num_photons - 1, 17] .= Prob[:]; # 
         SaveAll[photon_trajs:photon_trajs + num_photons - 1, 18] .= calpha[:]; # surf norm
 
         
