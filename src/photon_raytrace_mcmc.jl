@@ -1019,11 +1019,8 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_m
         gamF = 1 ./ sqrt.(1.0 .- vtot.^2)
         erg_ax = Mass_a .* sqrt.(1.0 .+ vtot.^2) .* gamF ;
         
-        try
-            vvec_flat = reduce(vcat, vvec_flat);
-        catch
-            print("reduced to max... \n");
-        end
+        
+        vvec_flat = reduce(vcat, vvec_flat);
       
         # make sure not in forbidden region....
         fails = ωpL .> erg_ax;
