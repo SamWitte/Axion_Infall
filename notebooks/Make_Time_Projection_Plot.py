@@ -4,6 +4,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from numba import jit
+import glob
 nside = 4
 from mpl_toolkits import mplot3d
 from matplotlib import ticker
@@ -19,9 +20,18 @@ from scipy import ndimage
 import warnings
 warnings.filterwarnings("ignore")
 
-fileList = []
+
+tList = []
+topDir = ""
+fileB = ""
+fileT = ""
+fileList = glob.glob(topDir + fileB + "*" + fileT)
+for i in range(len(fileAll)):
+    tag1 = fileAll[i].find("fixed_time_")
+    tag2 = fileAll[i].find("__NFW")
+    timeT = float(fileAll[i][tag1:tag2])
+    tList.append(timeT)
 thetaL = [0.3, 0.6, 0.9]
-tList = [0.0, 0.313, 0.626, 0.94, 1.253, 1.566, 1.88, 2.193, 2.506, 3.133, 3.44]
 eps_th = 0.1
 eps_phi = 0.07
 b_param = np.asarray([0.0, 1.0e8, 0.0])
