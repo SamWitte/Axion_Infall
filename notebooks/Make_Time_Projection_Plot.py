@@ -22,16 +22,18 @@ warnings.filterwarnings("ignore")
 
 
 tList = []
-topDir = ""
-fileB = ""
-fileT = ""
+topDir = "/Users/samuelwitte/Dropbox/Magnetized_Plasma/Axion_Infall/notebooks/data_paper/"
+fileB = "Minicluster__MassAx_2.6e-5_AxG_1.0e-14_ThetaM_0.2_rotPulsar_1.67_B0_1.6e14_rNS_10.0_MassNS_1.0_Ntrajs_5000000_NS_Mag_0.00033_NS_Theta_0.0_Mmc_1.0e-12_Rmc_1.86e9__trace_trags__thetaCN__fixed_time"
+fileT = "__NFW__.npz"
 fileList = glob.glob(topDir + fileB + "*" + fileT)
 for i in range(len(fileList)):
     tag1 = fileList[i].find("fixed_time_")
     tag2 = fileList[i].find("__NFW")
     timeT = float(fileList[i][tag1 + len("fixed_time_"):tag2])
     tList.append(timeT)
-thetaL = [0.3, 0.6, 0.9]
+print(fileList)
+print(tList)
+thetaL = [0.3, 0.5, 0.8]
 eps_th = 0.1
 eps_phi = 0.07
 b_param = np.asarray([0.0, 1.0e8, 0.0])
@@ -219,8 +221,10 @@ def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_
             if xpt < -np.pi:
                 xpt += 2*np.pi
             plt.errorbar(xpt, val, xerr=eps_phi, yerr=val*yERR, fmt='o', color=colorL[j])
+            if np.abs(np.pi - xpt) / np.pi < 0.01:
+                plt.errorbar(-np.pi, val, xerr=eps_phi, yerr=val*yERR, fmt='o', color=colorL[j])
 
-            if i == 0:
+            if time == 0:
                 for k in range(len(phi_big)):
                     filePhi = phi_cut(file_short, Phi_short, phi_big[k], eps=eps_phi)
                     
@@ -237,7 +241,7 @@ def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_
     ax.tick_params(direction='in', length=8, width=1, labelsize=18)#, colors='r',grid_color='r', grid_alpha=0.5)
     ax.tick_params(which='minor', direction='in', length=3, width=1, labelsize=12)
     ax.legend(fontsize=16)
-    plt.savefig("plots_paper/SkyMap_Width_"+tag+".png", dpi=200)
+    plt.savefig("plots_paper/TimeProjections_"+tag+".png", dpi=200)
     return
 
 time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_rot=omega_rot, mass=mass, NS_vel_T=NS_vel_T, is_axionstar=is_axionstar, tag=tag, sve=False, remove_dephase=True, yERR=yERR)
