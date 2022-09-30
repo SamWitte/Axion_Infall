@@ -29,7 +29,7 @@ fileList = glob.glob(topDir + fileB + "*" + fileT)
 for i in range(len(fileList)):
     tag1 = fileList[i].find("fixed_time_")
     tag2 = fileList[i].find("__NFW")
-    timeT = float(fileList[i][tag1:tag2])
+    timeT = float(fileList[i][tag1 + len(tag1):tag2])
     tList.append(timeT)
 thetaL = [0.3, 0.6, 0.9]
 eps_th = 0.1
