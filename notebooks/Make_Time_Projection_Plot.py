@@ -246,7 +246,7 @@ def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_
                     if xpt < -np.pi:
                         xpt += 2*np.pi
                 if jk == 0 and j == 0:
-                    plt.errorbar(xpt, val, xerr=eps_phi, yerr=val*yERR[j], fmt='o', color=colorL[j], label=r"$\theta =${:.2f}".format(thetaC)))
+                    plt.errorbar(xpt, val, xerr=eps_phi, yerr=val*yERR[j], fmt='o', color=colorL[j], label=r"$\theta =${:.2f}".format(thetaC))
                 else:
                     plt.errorbar(xpt, val, xerr=eps_phi, yerr=val*yERR[j], fmt='o', color=colorL[j])
                 
