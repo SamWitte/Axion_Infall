@@ -158,7 +158,7 @@ def eval_density_3d(fileN, b, t, NS_Vel_T, is_axionstar=False, is_nfw=True):
     
     rho_amc = (3*Mmc / (4*np.pi * (R_amc / 3.086e13)**3))  #
     
-    tt = Transient_Time(b, R_amc, NS_mag)
+    tt = Transient_Time(b, R_amc, NS_mag / 2.998e5)
     print(b, R_amc, NS_mag)
     print("transient time [s]: \t",tt)
     
