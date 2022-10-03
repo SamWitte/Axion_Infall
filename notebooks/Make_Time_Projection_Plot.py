@@ -245,10 +245,10 @@ def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_
                 if not is_axionstar:
                     if xpt < -np.pi:
                         xpt += 2*np.pi
-                if jk == 0 and j == 0:
-                    plt.errorbar(xpt, val, xerr=eps_phi, yerr=val*yERR[j], fmt='o', color=colorL[j], label=r"$\theta =${:.2f}".format(thetaC))
+                if jk == 0 and i == 0:
+                    plt.errorbar(xpt, val, xerr=eps_phi, yerr=val*yERR[j], elinewidth=1, capsize=0.2, capthick=1, fmt='o', color=colorL[j], label=r"$\theta =${:.2f}".format(thetaC))
                 else:
-                    plt.errorbar(xpt, val, xerr=eps_phi, yerr=val*yERR[j], fmt='o', color=colorL[j])
+                    plt.errorbar(xpt, val, xerr=eps_phi, yerr=val*yERR[j], elinewidth=1, capsize=0.2, capthick=1, fmt='o', color=colorL[j])
                 
                 if np.abs(np.pi - xpt) / np.pi < 0.01:
                     plt.errorbar(-np.pi, val, xerr=eps_phi, yerr=val*yERR[j], fmt='o', color=colorL[j])
