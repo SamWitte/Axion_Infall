@@ -242,9 +242,9 @@ def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_
                 filePhi = phi_cut(file_short, Phi_short, phi_PT, eps=eps_phi)
                 val = np.sum(filePhi[:,5]) * mass / ( np.sin(thetaC) * 2 * eps_th * 2 * eps_phi)  # eV / s
 
-                
-                if xpt < -np.pi:
-                    xpt += 2*np.pi
+                if not is_axionstar:
+                    if xpt < -np.pi:
+                        xpt += 2*np.pi
                 plt.errorbar(xpt, val, xerr=eps_phi, yerr=val*yERR[j], fmt='o', color=colorL[j])
                 if np.abs(np.pi - xpt) / np.pi < 0.01:
                     plt.errorbar(-np.pi, val, xerr=eps_phi, yerr=val*yERR[j], fmt='o', color=colorL[j])
