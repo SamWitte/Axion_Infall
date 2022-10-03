@@ -55,7 +55,7 @@ def phi_cut(arrayVals, Phi, phiV, eps=0.01):
         jointC = np.all(np.column_stack((condition1, condition2)), axis=1)
     return arrayVals[jointC]
 
-phi_big = np.linspace(-np.pi,np.pi,200)
+phi_big = np.linspace(-np.pi,np.pi,10)
 final_hold = np.zeros((len(fileList), len(thetaL), len(phi_big)))
 
 for i in range(len(fileList)):
@@ -88,10 +88,10 @@ for i in range(len(fileList)):
         
         final_hold[i, j, :] = ndimage.uniform_filter(holdV, size=1)
         
-print(final_hold[:, 1, 100])
 
-vals = []
 for j in range(len(thetaL)):
+    print(thetaL[j])
+    vals = []
     for k in range(len(phi_big)):
         # valC = np.abs(final_hold[:, j, k] - np.mean(final_hold[:, j, k])) / np.mean(final_hold[:, j, k])
         valC = (final_hold[:, j, k]) / np.mean(final_hold[:, j, k])
@@ -99,5 +99,6 @@ for j in range(len(thetaL)):
         # vals.append(np.std(final_hold[:, j, k]))
         vals.append(np.std(valC))
         
-vals = np.asarray(vals)
-print(np.median(vals), np.mean(vals))
+    valsT = np.asarray(vals)
+    print(np.max(vals))
+    # print(vals)

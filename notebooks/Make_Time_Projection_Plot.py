@@ -40,9 +40,13 @@ b_param = np.asarray([0.0, 1.0e8, 0.0])
 omega_rot = 1.67
 mass=1.0e-5
 NS_vel_T = 0.0
-is_axionstar=True
+is_axionstar=False
+plot_smoothed=True
 tag = ""
-yERR = 0.2
+phi_PT = 0.0
+yERR = 2.0 * np.array([0.04, 0.069, 0.157])
+time_MIN = -np.pi
+time_MAX = np.pi
 # time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_rot=omega_rot, mass=mass, NS_vel_T=NS_vel_T, is_axionstar=False, tag="", sve=False, remove_dephase=True, yERR=0.2)
 
 mpl.rcParams['lines.linewidth'] = 1.5
@@ -184,7 +188,7 @@ def diff_power_curve(arrayVals, ThetaVals, mass, period, binTot=300, eps_theta=0
     return np.column_stack((thetaL, rate))
 
 
-def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_rot = 1.0, mass=1e-5, NS_vel_T=0.0, is_axionstar=False, tag="", sve=False, remove_dephase=True, yERR=0.2):
+def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_rot = 1.0, mass=1e-5, NS_vel_T=0.0, is_axionstar=False, tag="", sve=False, remove_dephase=True, yERR=[0.2], phi_PT=0.0, time_MIN=-np.pi, time_MAX=np.pi, plot_smoothed=True):
     # timeEvo = np.empty(len(thetaL), len(thetaL), dtype=object)
 
     fig, ax = plt.subplots(figsize=(10,6))
@@ -194,47 +198,68 @@ def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_
         time = tList[i]
         
         phiV = omega_rot * time
-        
-        file_use, den = eval_density_3d(fileN, b_param, time, NS_vel_T, is_axionstar=is_axionstar)
-        file_use[:,5] *= den
-
-        if remove_dephase:
-            file_use[:, 5] /= file_use[:,15] **2
-            file_use[:,15] = 1.0
-        file_use[file_use[:,7] * file_use[:,15] > 1, 5] = 0.0
-
-        ThetaVals = file_use[:,2]
-        
-        phi_big = np.linspace(-np.pi,np.pi,200)
-        holdV = np.zeros(len(phi_big))
-
-        for j,thetaC in enumerate(thetaL):
-            file_short = theta_cut(file_use, ThetaVals, thetaC, eps=eps_th)
-            Phi_short = file_short[:,3]
-            Theta_short = file_short[:,2]
-            # print(np.max(Phi_short), np.min(Phi_short))
-           
-            filePhi = phi_cut(file_short, Phi_short, 0.0, eps=eps_phi)
-            val = np.sum(filePhi[:,5]) * mass / ( np.sin(thetaC) * 2 * eps_th * 2 * eps_phi)  # eV / s
-
-            xpt = phiV - 2 * np.pi
-            if xpt < -np.pi:
-                xpt += 2*np.pi
-            plt.errorbar(xpt, val, xerr=eps_phi, yerr=val*yERR, fmt='o', color=colorL[j])
-            if np.abs(np.pi - xpt) / np.pi < 0.01:
-                plt.errorbar(-np.pi, val, xerr=eps_phi, yerr=val*yERR, fmt='o', color=colorL[j])
-
-            if time == 0:
-                for k in range(len(phi_big)):
-                    filePhi = phi_cut(file_short, Phi_short, phi_big[k], eps=eps_phi)
-                    
-
-                    holdV[k] = np.sum(filePhi[:,5]) * mass / ( np.sin(thetaC) * 2 * eps_th * 2 * eps_phi)  # eV / s
+        xpt0 = phiV - 2 * np.pi
+        xptL = [xpt0]
+        foundL = False
+        foundH = False
+        cnt = 1
+        while not foundL:
+            xpt_hold = xpt0 - 2*np.pi*cnt
+            if xpt_hold >= time_MIN:
+                xptL.append(xpt_hold)
+                cnt +=1
+            else:
+                foundL = True
+        cnt = 1
+        while not foundH:
+            xpt_hold = xpt0 + 2*np.pi*cnt
+            if xpt_hold <= time_MAX:
+                xptL.append(xpt_hold)
+                cnt +=1
+            else:
+                foundH = True
                 
-                rateVs = ndimage.uniform_filter(holdV, size=15)
-                plt.plot(phi_big, rateVs, c=colorL[j], label=r"$\theta =${:.2f}".format(thetaC))
+        for jk,xpt in enumerate(xptL):
+            file_use, den = eval_density_3d(fileN, b_param, xpt, NS_vel_T, is_axionstar=is_axionstar)
+            file_use[:,5] *= den
+
+            if remove_dephase:
+                file_use[:, 5] /= file_use[:,15] **2
+                file_use[:,15] = 1.0
+            file_use[file_use[:,7] * file_use[:,15] > 1, 5] = 0.0
+
+            ThetaVals = file_use[:,2]
+            
+            phi_big = np.linspace(-np.pi,np.pi,200)
+            holdV = np.zeros(len(phi_big))
+
+            for j,thetaC in enumerate(thetaL):
+                file_short = theta_cut(file_use, ThetaVals, thetaC, eps=eps_th)
+                Phi_short = file_short[:,3]
+                Theta_short = file_short[:,2]
+                # print(np.max(Phi_short), np.min(Phi_short))
+               
+                filePhi = phi_cut(file_short, Phi_short, phi_PT, eps=eps_phi)
+                val = np.sum(filePhi[:,5]) * mass / ( np.sin(thetaC) * 2 * eps_th * 2 * eps_phi)  # eV / s
+
+                
+                if xpt < -np.pi:
+                    xpt += 2*np.pi
+                plt.errorbar(xpt, val, xerr=eps_phi, yerr=val*yERR[j], fmt='o', color=colorL[j])
+                if np.abs(np.pi - xpt) / np.pi < 0.01:
+                    plt.errorbar(-np.pi, val, xerr=eps_phi, yerr=val*yERR[j], fmt='o', color=colorL[j])
+
+                if time == 0 and jk==0 and plot_smoothed:
+                    for k in range(len(phi_big)):
+                        filePhi = phi_cut(file_short, Phi_short, phi_big[k], eps=eps_phi)
+                        
+
+                        holdV[k] = np.sum(filePhi[:,5]) * mass / ( np.sin(thetaC) * 2 * eps_th * 2 * eps_phi)  # eV / s
+                    
+                    rateVs = ndimage.uniform_filter(holdV, size=15)
+                    plt.plot(phi_big, rateVs, c=colorL[j], label=r"$\theta =${:.2f}".format(thetaC))
     plt.yscale("log")
-    plt.xlim([-np.pi, np.pi])
+    plt.xlim([time_MIN, time_MAX])
     plt.xlabel(r'$\omega \times t$', fontsize=20);
     plt.ylabel('Flux [arb. units]', fontsize=20);
     # plt.xticks([0, 1, 2, 3, 4, 5, 6], ('0', '', '2', '', '4', '', '6'))
@@ -244,4 +269,4 @@ def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_
     plt.savefig("plots_paper/TimeProjections_"+tag+".png", dpi=200)
     return
 
-time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_rot=omega_rot, mass=mass, NS_vel_T=NS_vel_T, is_axionstar=is_axionstar, tag=tag, sve=False, remove_dephase=True, yERR=yERR)
+time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_rot=omega_rot, mass=mass, NS_vel_T=NS_vel_T, is_axionstar=is_axionstar, tag=tag, sve=False, remove_dephase=True, yERR=yERR, phi_PT=phi_PT, time_MIN=time_MIN, time_MAX=time_MAX, plot_smoothed=plot_smoothed)
