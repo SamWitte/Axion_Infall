@@ -245,7 +245,11 @@ def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_
                 if not is_axionstar:
                     if xpt < -np.pi:
                         xpt += 2*np.pi
-                plt.errorbar(xpt, val, xerr=eps_phi, yerr=val*yERR[j], fmt='o', color=colorL[j])
+                if jk == 0 and j == 0:
+                    plt.errorbar(xpt, val, xerr=eps_phi, yerr=val*yERR[j], fmt='o', color=colorL[j], label=r"$\theta =${:.2f}".format(thetaC)))
+                else:
+                    plt.errorbar(xpt, val, xerr=eps_phi, yerr=val*yERR[j], fmt='o', color=colorL[j])
+                
                 if np.abs(np.pi - xpt) / np.pi < 0.01:
                     plt.errorbar(-np.pi, val, xerr=eps_phi, yerr=val*yERR[j], fmt='o', color=colorL[j])
 
@@ -253,10 +257,10 @@ def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_
                     for k in range(len(phi_big)):
                         filePhi = phi_cut(file_short, Phi_short, phi_big[k], eps=eps_phi)
                         
-
                         holdV[k] = np.sum(filePhi[:,5]) * mass / ( np.sin(thetaC) * 2 * eps_th * 2 * eps_phi)  # eV / s
                     
                     rateVs = ndimage.uniform_filter(holdV, size=15)
+                    
                     plt.plot(phi_big, rateVs, c=colorL[j], label=r"$\theta =${:.2f}".format(thetaC))
     plt.yscale("log")
     plt.xlim([time_MIN, time_MAX])
