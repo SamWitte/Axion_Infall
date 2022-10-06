@@ -244,6 +244,7 @@ function jacobian_fv(x_in, vel_loc)
     dvZi_dV = grad(v_infinity(θ, ϕ, rmag, seed(vel_loc), v_comp=3));
     
     JJ = det([dvXi_dV; dvYi_dV; dvZi_dV])
+    print(abs.(JJ).^(-1), "\n")
     
     return abs.(JJ).^(-1)
 end
@@ -255,8 +256,9 @@ function v_infinity(θ, ϕ, r, vel_loc; v_comp=1, Mass_NS=1)
 
     v_inf = sqrt.(vel_loc_mag.^2 .- (2 .* GMr)); # unitless
     rhat = [sin.(θ) .* cos.(ϕ) sin.(θ) .* sin.(ϕ) cos.(θ)]
-    r_dot_v = sum(vel_loc .* transpose(rhat))
+    r_dot_v = sum(vel_loc .* rhat)
     
+
     denom = v_inf.^2 .+ GMr .- v_inf .* r_dot_v;
     if v_comp == 1
         v_inf_comp = (v_inf.^2 .* vx .+ v_inf .* GMr .* rhat[1] .- v_inf .* vx .* r_dot_v) ./ denom
@@ -1006,7 +1008,8 @@ function find_samples(maxR, ntimes_ax, θm, ωPul, B0, rNS, Mass_a, Mass_NS; n_m
        
         for i in 1:ntrajs
             for j in 1:3
-                vIfty[i,j] = v_infinity(θ[i], ϕ[i], rmag[i], v0[i, :]; v_comp=j, Mass_NS=Mass_NS)
+                
+                vIfty[i,j] = v_infinity(θ[i], ϕ[i], rmag[i], transpose(v0[i, :]); v_comp=j, Mass_NS=Mass_NS)
             end
         end
         
@@ -1217,9 +1220,8 @@ function main_runner(Mass_a, Ax_g, θm, ωPul, B0, rNS, Mass_NS, Ntajs, gammaF, 
                 
                 velV2, accur = RT.solve_vel_CS(θ[i], ϕ[i], rmag[i], NS_vel_p, guess=vGuess, errV=errSlve)
                 
-
                 test_func = (sum(velV2.^2) .- (2 .* GNew .* Mass_NS ./ rmag[i] ./ (c_km .^ 2))); # unitless
-                if (velV2 != vel[i, :])&&(accur .< accur_threshold)&&(test_func .> 0)
+                if (round.(velV2, digits=3) != round.(transpose(vel[i, :]), digits=3))&&(accur .< accur_threshold)&&(test_func .> 0)
                     found = true
                     vel[i+length(rmag), :] = velV2
                     mcmc_weightsFull[i+length(rmag)] *= RT.jacobian_fv(xpos_flat[i, :], velV2)
