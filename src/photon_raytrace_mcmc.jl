@@ -244,7 +244,7 @@ function jacobian_fv(x_in, vel_loc)
     dvZi_dV = grad(v_infinity(θ, ϕ, rmag, seed(vel_loc), v_comp=3));
     
     JJ = det([dvXi_dV; dvYi_dV; dvZi_dV])
-    print(abs.(JJ).^(-1), "\n")
+    
     
     return abs.(JJ).^(-1)
 end
