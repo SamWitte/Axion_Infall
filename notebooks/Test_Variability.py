@@ -15,10 +15,10 @@ topDir = "/Users/samuelwitte/Dropbox/Magnetized_Plasma/Axion_Infall/notebooks/da
 fileB = "Minicluster__MassAx_2.6e-5_AxG_1.0e-14_ThetaM_0.2_rotPulsar_1.67_B0_1.6e14_rNS_10.0_MassNS_1.0_Ntrajs_5000000_NS_Mag_0.00033_NS_Theta_0.0_Mmc_1.0e-12_Rmc_1.86e9__trace_trags__thetaCN__fixed_time_0.0"
 fileT = ".npz"
 fileList = glob.glob(topDir + fileB + "*" + fileT)
-b_param = [0.0, 0.0, 0.0]
+b_param = np.array([0.0, 0.0, 0.0])
 NS_vel_T = 0.0
 is_axionstar=False
-thetaL = [0.3, 0.5, 0.8]
+thetaL = [0.3, 0.5, 0.9]
 eps_th = 0.1
 eps_phi = 0.07
 mass = 1.0e-5
@@ -97,7 +97,7 @@ for j in range(len(thetaL)):
         valC = (final_hold[:, j, k]) / np.mean(final_hold[:, j, k])
         # vals.append(np.std(final_hold[:, j, k]) / np.mean(final_hold[:, j, k]))
         # vals.append(np.std(final_hold[:, j, k]))
-        vals.append(np.std(valC))
+        vals.append(np.sqrt(2) * np.std(valC))
         
     valsT = np.asarray(vals)
     print(np.max(vals))

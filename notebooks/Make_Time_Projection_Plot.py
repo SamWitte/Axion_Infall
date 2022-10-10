@@ -23,19 +23,19 @@ warnings.filterwarnings("ignore")
 
 tList = []
 topDir = "/Users/samuelwitte/Dropbox/Magnetized_Plasma/Axion_Infall/notebooks/data_paper/"
-fileB = "Minicluster__MassAx_2.6e-5_AxG_1.0e-14_ThetaM_0.2_rotPulsar_1.67_B0_1.6e14_rNS_10.0_MassNS_1.0_Ntrajs_5000000_NS_Mag_0.00033_NS_Theta_0.0_Mmc_1.0e-12_Rmc_1.86e9__trace_trags__thetaCN__fixed_time"
-fileT = "__NFW__.npz"
+fileB = "Minicluster__MassAx_2.6e-5_AxG_1.0e-14_ThetaM_0.2_rotPulsar_1.67_B0_1.6e14_rNS_10.0_MassNS_1.0_Ntrajs_5000000_NS_Mag_0.00033_NS_Theta_0.0_Mmc_1.0e-12_Rmc_1.86e9__trace_trags__thetaCN__fixed_time_"
+fileT = "___.npz"
 fileList = glob.glob(topDir + fileB + "*" + fileT)
 for i in range(len(fileList)):
     tag1 = fileList[i].find("fixed_time_")
-    tag2 = fileList[i].find("__NFW")
+    tag2 = fileList[i].find("___.npz")
     timeT = float(fileList[i][tag1 + len("fixed_time_"):tag2])
     tList.append(timeT)
 print(fileList)
 print(tList)
-thetaL = [0.3, 0.5, 0.8]
+thetaL = [0.3, 0.5, 0.9]
 eps_th = 0.1
-eps_phi = 0.07
+eps_phi = 0.1
 b_param = np.asarray([0.0, 1.0e8, 0.0])
 omega_rot = 1.67
 mass=1.0e-5
@@ -44,7 +44,7 @@ is_axionstar=False
 plot_smoothed=True
 tag = ""
 phi_PT = 0.0
-yERR = 2.0 * np.array([0.04, 0.069, 0.157])
+yERR = np.array([0.056, 0.062, 0.154])
 time_MIN = -np.pi
 time_MAX = np.pi
 # time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_rot=omega_rot, mass=mass, NS_vel_T=NS_vel_T, is_axionstar=False, tag="", sve=False, remove_dephase=True, yERR=0.2)
@@ -193,6 +193,9 @@ def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_
 
     fig, ax = plt.subplots(figsize=(10,6))
     colorL = ["#6B0504", "#94849B","#73AB84", "#79C7C5",  "#FFCAAF"]
+    dist = 1 # 1 kpc, assumed
+    bwidth = 1e-5 * mass / (6.58e-16) # fractional bandwidth
+    
     for i in range(len(fileList)):
         fileN = fileList[i]
         time = tList[i]
@@ -240,12 +243,14 @@ def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_
                 # print(np.max(Phi_short), np.min(Phi_short))
                
                 filePhi = phi_cut(file_short, Phi_short, phi_PT, eps=eps_phi)
-                val = np.sum(filePhi[:,5]) * mass / ( np.sin(thetaC) * 2 * eps_th * 2 * eps_phi)  # eV / s
-
+                
+                val = np.sum(filePhi[:,5]) * mass / ( np.sin(thetaC) * 2 * eps_th * 2 * eps_phi) / bwidth  # eV / s / Hz
+                val *= 1.60218e-12 / (dist * 3.086e+21)**2 / 1e-26 # mJy
+            
                 if not is_axionstar:
                     if xpt < -np.pi:
                         xpt += 2*np.pi
-                if jk == 0 and i == 0:
+                if jk == 0 and i == 0 and is_axionstar:
                     plt.errorbar(xpt, val, xerr=eps_phi, yerr=val*yERR[j], elinewidth=1, capsize=0.2, capthick=1, fmt='o', color=colorL[j], label=r"$\theta =${:.2f}".format(thetaC))
                 else:
                     plt.errorbar(xpt, val, xerr=eps_phi, yerr=val*yERR[j], elinewidth=1, capsize=0.2, capthick=1, fmt='o', color=colorL[j])
@@ -257,7 +262,8 @@ def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_
                     for k in range(len(phi_big)):
                         filePhi = phi_cut(file_short, Phi_short, phi_big[k], eps=eps_phi)
                         
-                        holdV[k] = np.sum(filePhi[:,5]) * mass / ( np.sin(thetaC) * 2 * eps_th * 2 * eps_phi)  # eV / s
+                        holdV[k] = np.sum(filePhi[:,5]) * mass / ( np.sin(thetaC) * 2 * eps_th * 2 * eps_phi)  / bwidth # eV / s
+                        holdV[k] *= 1.60218e-12 / (dist * 3.086e+21)**2 / 1e-26 # mJy
                     
                     rateVs = ndimage.uniform_filter(holdV, size=15)
                     
@@ -265,7 +271,7 @@ def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_
     plt.yscale("log")
     plt.xlim([time_MIN, time_MAX])
     plt.xlabel(r'$\omega \times t$', fontsize=20);
-    plt.ylabel('Flux [arb. units]', fontsize=20);
+    plt.ylabel('Flux [mJy]', fontsize=20);
     # plt.xticks([0, 1, 2, 3, 4, 5, 6], ('0', '', '2', '', '4', '', '6'))
     ax.tick_params(direction='in', length=8, width=1, labelsize=18)#, colors='r',grid_color='r', grid_alpha=0.5)
     ax.tick_params(which='minor', direction='in', length=3, width=1, labelsize=12)
@@ -273,4 +279,4 @@ def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_
     plt.savefig("plots_paper/TimeProjections_"+tag+".png", dpi=200)
     return
 
-time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_rot=omega_rot, mass=mass, NS_vel_T=NS_vel_T, is_axionstar=is_axionstar, tag=tag, sve=False, remove_dephase=True, yERR=yERR, phi_PT=phi_PT, time_MIN=time_MIN, time_MAX=time_MAX, plot_smoothed=plot_smoothed)
+time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_rot=omega_rot, mass=mass, NS_vel_T=NS_vel_T, is_axionstar=is_axionstar, tag=tag, sve=False, remove_dephase=False, yERR=yERR, phi_PT=phi_PT, time_MIN=time_MIN, time_MAX=time_MAX, plot_smoothed=plot_smoothed)
