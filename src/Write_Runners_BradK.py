@@ -100,7 +100,7 @@ for i in range(cnt):
 
 
 
-for i in range(batches):
+for i in range(batchSize):
 
     fout=open(fileTag + '{}.sh'.format(i), 'w')
     fout.write('#! /bin/bash\n')
@@ -110,7 +110,7 @@ for i in range(batches):
     fout.write('#SBATCH --cpus-per-task=1 \n')
     
     
-    for cmd in file_out[i::batches]:
+    for cmd in file_out[i::batchSize]:
         fout.write('{}'.format(cmd))
         fout.write('sleep 3 \n')
         fout.write('wait \n')
