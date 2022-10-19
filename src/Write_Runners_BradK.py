@@ -66,7 +66,7 @@ file_out = []
 for i in range(cnt):
 
     
-    file_out_HOLD += "B0={:.2e} \n".format(B0_List[i])
+    file_out_HOLD = "B0={:.2e} \n".format(B0_List[i])
     file_out_HOLD += "ThetaM={:.2e} \n".format(ThetaM_List[i])
     file_out_HOLD += "rotW={:.2e} \n".format(rotW_List[i])
     file_out_HOLD += "NS_vel_M={:.2e} \n".format(NS_Vel_M_list[i])
