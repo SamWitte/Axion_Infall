@@ -63,6 +63,7 @@ batchSize = 10
 
 total_runners = Num_RUN
 file_out = []
+cnt = 0
 for i in range(cnt):
 
     
@@ -122,7 +123,7 @@ for i in range(batchSize):
     fout.close()
     cnt +=1
     
-    
+
 
 fout = open('simall_Anteater.sh', 'w')
 fout.write('for ((i = {:d} ; i < {:d} ; i++)); do \n'.format(1, cnt+init_indx))
