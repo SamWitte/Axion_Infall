@@ -9,6 +9,7 @@ file_Load_Brad = np.loadtxt("../../../M31_encounter_data/Stripping_Models/Intera
 freqRun = 8.0e9 # GHz
 MassA = 2*np.pi * freqRun * 6.58e-16 # eV
 Axg = 1e-14
+CM = 1
 
 Num_RUN = 10
 NS_Vel_T_list = []
@@ -22,8 +23,8 @@ rotW_List=[]
 
 cnt = 0
 
-def test_plamsaF(B, P, mass):
-    op = 69.2 * np.sqrt(2) * np.sqrt(B / 1e14 / P) * 1e-6 # eV
+def test_plamsaF(B, P, mass, CM=1):
+    op = 69.2 * np.sqrt(2) * np.sqrt(B / 1e14 / P) * 1e-6 * np.sqrt(CM) # eV
     if op  < mass:
         return False
     else:
@@ -33,7 +34,7 @@ def test_plamsaF(B, P, mass):
 
 for i in range(Num_RUN):
     B0, P, ThM, Age, xx, yy, zz, MC_Den, MC_Rad, MC_Mass, b, velNS = file_Load_Brad[i, :]
-    if test_plamsaF(B0, P, MassA):
+    if test_plamsaF(B0, P, MassA, CM=CM):
         NS_Vel_T_list.append(np.arccos(1.0 - 2.0 * random.random()))
         NS_Vel_M_list.append(velNS * 3.086e13) # km/s
 
@@ -63,8 +64,7 @@ total_runners = Num_RUN
 file_out = []
 for i in range(cnt):
 
-
-    file_out_HOLD += "MassA={:.2e} \n".format(MassA)
+    file_out_HOLD = "MassA={:.2e} \n".format(MassA)
     file_out_HOLD += "Axg={:.2e} \n".format(Axg)
     file_out_HOLD += "B0={:.2e} \n".format(B0_List[i])
     file_out_HOLD += "ThetaM={:.2e} \n".format(ThetaM_List[i])
