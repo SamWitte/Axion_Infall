@@ -10,6 +10,7 @@ freqRun = 8.0e9 # GHz
 MassA = 2*np.pi * freqRun * 6.58e-16 # eV
 Axg = 1e-14
 CM = 1
+init_indx = 0
 
 Num_RUN = 10
 NS_Vel_T_list = []
