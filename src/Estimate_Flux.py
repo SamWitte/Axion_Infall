@@ -2,7 +2,14 @@ import numpy as np
 import glob
 from AMC_Density_Evolution import *
 import random
-mass = 3.51e-5
+
+freq = 8.0e9 #Hz
+mass = 2*np.pi * freq * 6.58e-16 # eV
+g_agg = 1e-14 # 1/GeV
+tau = 100.0
+deltV = 1.0
+maxCM = 1.0
+dm_OverD = 100.0 # extra dark matter density
 
 def theta_cut(arrayVals, Theta, thetaV, eps=0.03):
     if (thetaV - eps) < 0:
@@ -67,27 +74,36 @@ def extract_file_params(fileN):
     
     return mass, period, thetaM, B0, M_amc, R_amc, v_amc, v_Theta
     
-def test_plamsaF(B, P, mass):
-    op = 69.2 * np.sqrt(2) * np.sqrt(B / 1e14 / P) * 1e-6 # eV
+def test_plamsaF(B, P, mass, CM=1):
+    op = 69.2 * np.sqrt(2) * np.sqrt(B / 1e14 / P) * 1e-6 * np.sqrt(CM) # eV
     if op  < mass:
         return False
     else:
         return True
 
-def get_flux(mass, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752):
+def get_flux(mass, g_agg, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752, CM=1, tau=1.0, deltV=1, dm_OverD=1.0):
     # bandwidth in Hz
     # dist in kpc
-    eff_rate = 0.837425 * 0.065 # effective interaction rate / day
+    # eff_rate = 0.837425  # effective interaction rate / day -- NEED AUTO READ FILE! SJW
     
 
     dirN = "results"
-    BradK_File = np.loadtxt("../../M31_encounter_data/Stripping_Models/Interaction_params_PL_M_AMC_1.00e-14_M31_youngNS_delta_1.txt")
+    BradK_File = np.loadtxt("../../M31_encounter_data/M31_encounter_data_Oct2022/Interaction_params_PL_M_AMC_1.00e-14_M31_maxCM_{:.0f}_tauO_{:.1f}_delta_{:d}.txt".format(CM, tau, deltV))
+    Rate_File = np.loadtxt("../../M31_encounter_data/M31_encounter_data_Oct2022/EncounterRates_M31.txt")
+    cond1 = (Rate_File[i, 2] == CM)
+    cond2 = (Rate_File[i, 3] == tau)
+    
+    eff_rate = Rate_File[np.any(np.column_stack((condition1, condition2)), axis=1), 4] # number / day
+    eff_rate *= dm_OverD
+    
+            
+    
     properties_list = []
     cnt = 0
     for i in range(len(BradK_File)):
         B0, P, ThM, Age, xx, yy, zz, MC_Den, MC_Rad, MC_Mass, b, velNS = BradK_File[i, :]
         
-        if test_plamsaF(B0, P, mass):
+        if test_plamsaF(B0, P, mass, CM=CM):
             properties_list.append([B0, P, ThM, Age, xx, yy, zz, MC_Den, MC_Rad, MC_Mass, b, velNS])
             cnt += 1
             
@@ -117,17 +133,21 @@ def get_flux(mass, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752):
             MC_Den = properties_list[indx_g, 7] * 37.96
             # velNS = properties_list[i, 11]
             
-            transit_time = AMC_CrossingTime(b_param * 3.086e+13, MC_Mass, velNS, MC_R  ) # seconds
+            transit_time = AMC_CrossingTime(b_param * 3.086e+13, MC_Mass, velNS, MC_R) # seconds
             time_sample = random.random() * total_time_length # peak encounter, days
             
             if (((time_sample - transit_time / 2 * 1.15741e-5) < (central_obs_window - 1))and((time_sample + transit_time / 2 * 1.15741e-5) > (central_obs_window + 1))):
                 file_use, den = eval_density_3d(fileList[i], b_param * 3.086e+13, (time_sample - central_obs_window) / 1.15741e-5 , v_Theta, is_axionstar=False, is_nfw=False)
-                # file_use, den = eval_density_3d(fileList[i], b_param * 3.086e+13, 0.0, v_Theta, is_axionstar=False, is_nfw=False)
+                
                 num_in_window += 1
             else:
                 continue
             
             file_use[:, 5] *= den
+            prob = file_use[:,16]
+            LZ_prob = (1.0 - np.exp(-prob * (g_agg / 1e-14)**2))
+            file_use[:,5] *= LZ_prob / prob
+            
             ThetaVals = file_use[:, 2]
             
             vals = diff_power_curve(file_use, ThetaVals, mass, period, binTot=binTot, eps_theta=eps_theta)
@@ -141,6 +161,7 @@ def get_flux(mass, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752):
         print("number in window for observing run {:.0f} is {:.0f} \n".format(j, num_in_window))
     print(flux_density_list)
     flux_density_list = np.asarray(flux_density_list)
-    print("Maximum flux observed: {:.2e} mJy [computed with g_agg = 1e-14 1/GeV]".format(np.max(flux_density_list)))
+    print("Maximum flux observed: {:.2e} mJy [computed with g_agg = {:.1e} 1/GeV]".format(np.max(flux_density_list), g_agg))
+    print("Limit around 10 mJy...")
 
-get_flux(mass)
+get_flux(mass, g_agg, cm=maxCM, deltV=deltV, tau=tau, dm_OverD=dm_OverD)
