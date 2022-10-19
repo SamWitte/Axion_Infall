@@ -120,9 +120,6 @@ for i in range(batchSize):
     cnt +=1
     
     
-    fout.write('{}\n'.format(file_out[i]))
-    fout.close()
-    
 
 fout = open('simall_Anteater.sh', 'w')
 fout.write('for ((i = {:d} ; i < {:d} ; i++)); do \n'.format(1, cnt+init_indx))
