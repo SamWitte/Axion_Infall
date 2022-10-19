@@ -127,7 +127,7 @@ for i in range(batchSize):
 
 fout = open('simall_Anteater.sh', 'w')
 fout.write('for ((i = {:d} ; i < {:d} ; i++)); do \n'.format(1, cnt+init_indx))
-fout.write('\t sbatch Anteater_commands_"$i".sh \n')
+fout.write('\t sbatch ' + fileTag + '"$i".sh \n')
 fout.write('done \n')
 fout.close()
 
