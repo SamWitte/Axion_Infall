@@ -63,7 +63,7 @@ batchSize = 10
 
 total_runners = Num_RUN
 file_out = []
-cnt = 0
+
 for i in range(cnt):
 
     
@@ -76,9 +76,6 @@ for i in range(cnt):
     file_out_HOLD += "R_MC={:.2e} \n".format(R_MC_list[i])
     file_out_HOLD += "is_AS={:.0f} \n".format(is_AS_list[i])
 
-
-    
-    
 
     file_out_HOLD += "for ((i = 0; i < $SLURM_NTASKS ; i++)); do \n"
     file_out_HOLD += "srun --ntasks=1 --exclusive --mem=$memPerjob julia --threads 1 Run_RayTracer_Server.jl --MassA $MassA --Axg $Axg --B0 $B0 --ThetaM $ThetaM --rotW $rotW --NS_vel_M $NS_vel_M --NS_vel_T $NS_vel_T --M_MC $M_MC --R_MC $R_MC --is_AS $is_AS --trace_trajs $trace_trajs --theta_cut_trajs $theta_cut_trajs --Nts $Trajs --ftag $tagF$i --run_RT 1 --fixed_time $fix_time & \n"
@@ -93,7 +90,7 @@ for i in range(cnt):
     file_out.append(file_out_HOLD)
 
 
-
+cnt = 0
 for i in range(batchSize):
 
     fout=open(fileTag + '{}.sh'.format(i), 'w')
