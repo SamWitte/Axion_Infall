@@ -9,7 +9,10 @@ def AMC_CrossingTime(b, M, v_NS, R_amc):
     # assume b [km], M [solar mass], v_NS [vector unitless]
     # R_amc = (3*M / (4*np.pi * rho_amc))**(1/3) * 3.086*10**13 #	km
     bnorm = np.sqrt(np.sum(b**2))
-    delD = np.sqrt(R_amc**2 - bnorm**2)  # b in km
+    if R_amc > bnorm:
+        delD = np.sqrt(R_amc**2 - bnorm**2)  # b in km
+    else:
+        delD = 0.0
     return 2 * delD / np.sqrt(np.sum(v_NS**2)) / 2.998e5 # s
 
 def AMC_profile(r, M, rho_amc, R_amc, is_axionstar=False, is_nfw=True):
@@ -111,6 +114,7 @@ def get_NS_vel(fileN):
 def get_t0_point(fileN, b, NS_vel_T_true):
     # b impact param [km]
     NS_vel_T, NS_vel_M, Mmc, R_amc = get_NS_vel(fileN)
+  
     NS_vel = np.array([0.0, np.sin(NS_vel_T_true), np.cos(NS_vel_T_true)]) * NS_vel_M * 2.998e5 # km /s
     NS_hat = np.array([0.0, np.sin(NS_vel_T_true), np.cos(NS_vel_T_true)])
     
@@ -118,27 +122,29 @@ def get_t0_point(fileN, b, NS_vel_T_true):
     
     Mass_NS = 1.0
     # Roche_R = R_amc * (2 * Mass_NS / Mmc)**(1.0 / 3.0)
+    # Roche_R_medianD = np.median(np.abs(np.sum(fileData[:,18:18+3] * -NS_hat, axis=1)))
     Roche_R = np.median(np.abs(np.sum(fileData[:,18:18+3] * -NS_hat, axis=1)))
     
     
-    # print(Roche_R)
+    # print(Roche_R, Roche_R_medianD)
     # z_comp = -np.sin(NS_vel_T) / np.cos(NS_vel_T)
     # perp_vec = np.array([1.0, 1.0, z_comp])
     # perp_vec /= np.sqrt(np.sum(perp_vec**2))
     
     # initial position of center of AMC at initial infall
-    init_pos = b + (-NS_hat) * Roche_R
+    tt = Transient_Time(b, R_amc, NS_vel_M)
+    init_pos = b + (-NS_hat) * Roche_R #- tt * NS_vel
+    
+    init_pos_norm = np.sqrt(np.sum(init_pos**2))
+    rel_proj_dist = np.sum(fileData[:,18:18+3] * init_pos / init_pos_norm, axis=1) - init_pos_norm
+    print(np.max(rel_proj_dist), np.min(rel_proj_dist), np.median(rel_proj_dist), np.std(rel_proj_dist))
+    
     
     rel_dist = np.sqrt(np.sum((init_pos - fileData[:,18:18+3])**2, axis=1))
-    # dist_from_center = fileData[:, 18:18+3] + init_pos
-    # dist_proj_vel = np.dot(dist_from_center, -NS_hat) + R_amc
-    # closet_to_earth = np.argmin(np.sqrt(np.sum(fileData[:, 18:18+3]**2, axis=1)))
-    # eff_time = ((np.max(dist_proj_vel) )/ (NS_vel_M * 2.998e5))  # s
-    # dist_proj_vel =  + -NS_vel * eff_time # * eff_time_list[np.argmin(rad_dist)]
-    # return init_pos, dist_proj_vel, NS_vel, Mmc, R_amc, fileData
+    print(np.max(rel_dist), np.min(rel_dist), np.median(rel_dist))
     return init_pos, rel_dist, NS_vel, Mmc, R_amc, fileData
 
-def eval_density_3d(fileN, b, t, NS_Vel_T, is_axionstar=False, is_nfw=True):
+def eval_density_3d(fileN, b, t, NS_Vel_T, is_axionstar=False, is_nfw=True, return_rel_dist=False, c=100, NS_mag=None):
     # given input file and impact parameter, return density-weighted raytracer output at time t
     # t [s]
     
@@ -146,11 +152,17 @@ def eval_density_3d(fileN, b, t, NS_Vel_T, is_axionstar=False, is_nfw=True):
     # newDist_c = dist_proj - NS_vel * t
     # dist_from_center = fileData[:, 18:18+3] + init_pos
     init_pos, rel_dist, NS_vel, Mmc, R_amc, fileData = get_t0_point(fileN, b, NS_Vel_T)
-    NS_mag = np.sqrt(np.sum(NS_vel**2))
+    if NS_mag is None:
+        NS_mag = np.sqrt(np.sum(NS_vel**2))
+    
     
     rel_dist = np.sqrt(rel_dist**2 + (NS_mag * t)**2)
     
     
+    
+    vel_disp_inf = np.sqrt(np.sum(fileData[:,-3:]**2, axis=1))
+    vel_disp_inf -= np.median(vel_disp_inf) # subtract off bulk vel
+    reWeightV = vel_disp_rescale(Mmc, R_amc, rel_dist, np.abs(vel_disp_inf), is_nfw=is_nfw, c=c)
     # print(init_pos, rel_dist)
     # rad_dist = np.sqrt(np.sum((dist_from_center - newDist_c)**2, axis=1)) # km
     # print(init_pos, dist_from_center, newDist_c, rad_dist)
@@ -159,11 +171,61 @@ def eval_density_3d(fileN, b, t, NS_Vel_T, is_axionstar=False, is_nfw=True):
     rho_amc = (3*Mmc / (4*np.pi * (R_amc / 3.086e13)**3))  #
     
     tt = Transient_Time(b, R_amc, NS_mag / 2.998e5)
-    print(b, R_amc, NS_mag)
-    print("transient time [s]: \t",tt)
+    # print(b, R_amc, NS_mag)
+    # print("transient time [s]: \t",tt)
     
     # print(np.min(rel_dist), np.max(rel_dist))
     den = AMC_profile(rel_dist, Mmc, rho_amc, R_amc, is_axionstar=is_axionstar, is_nfw=is_nfw)
     # fileData[:, 5] *= den # properly re-weight density terms
+    
+    
+    if not return_rel_dist:
+        return fileData, den
+    else:
+        return fileData, den, rel_dist, reWeightV
+        
+
+def eval_density_3d_timeList(fileN, b, t_list, NS_Vel_T, is_axionstar=False, is_nfw=True, return_rel_dist=False, c=100, NS_mag=None):
+   
+    init_pos, rel_dist, NS_vel, Mmc, R_amc, fileData = get_t0_point(fileN, b, NS_Vel_T)
+    if NS_mag is None:
+        NS_mag = np.sqrt(np.sum(NS_vel**2))
+        
+    
+    vel_disp_inf = np.sqrt(np.sum(fileData[:,-3:]**2, axis=1))
+    vel_disp_inf -= np.median(vel_disp_inf) # subtract off bulk vel
+    reWeightV = vel_disp_rescale(Mmc, R_amc, rel_dist, np.abs(vel_disp_inf), is_nfw=is_nfw, c=c)
+        
+    rho_amc = (3*Mmc / (4*np.pi * (R_amc / 3.086e13)**3))  #
+    
+    tt = Transient_Time(b, R_amc, NS_mag / 2.998e5)
+    print("estimated transient time [s]: \t",tt)
+    
+    den = np.empty(len(t_list), dtype=object)
+    for i,t in enumerate(t_list):
+        rel_dist_TEMP = np.sqrt(np.sum((init_pos - (fileData[:,18:18+3] + (NS_vel * t)))**2, axis=1))
+        # rel_dist_TEMP = np.sqrt(rel_dist**2 + (NS_mag * t)**2)
+        den[i] = AMC_profile(rel_dist_TEMP, Mmc, rho_amc, R_amc, is_axionstar=is_axionstar, is_nfw=is_nfw)
+        den[i] *= reWeightV
     return fileData, den
 
+
+def vel_disp_rescale(Mmc, R_amc, r_samples, v_inf_samples, is_nfw=True, c=100):
+    Gnew = 132712000000.0
+    ckm = 2.998e5
+    v0_rmax = np.sqrt(2 * Gnew * Mmc / R_amc) # km/s
+    
+    MSamp = NFW_fracM_inR(c, R_amc, r_samples)
+    v0_loc = np.sqrt(2 * Gnew * Mmc * MSamp / r_samples) # km/s
+    print(v0_rmax, np.mean(v0_loc), np.median(v0_loc), np.mean(v_inf_samples), np.median(v_inf_samples))
+    print(v0_loc[:-1])
+    reweight = np.exp(-(v_inf_samples /v0_loc) **2) / np.exp(-(v_inf_samples /v0_rmax) **2)
+    reweight[v_inf_samples > v0_rmax] = 0.0
+    return reweight
+    
+    
+def NFW_fracM_inR(c, R_amc, r):
+    rs = R_amc / c
+    numer = (rs + R_amc) * (r + (r+rs)* (np.log(rs) - np.log(r + rs)))
+    denom = (r+rs) * (R_amc + (rs + R_amc) * (np.log(rs) - np.log(rs + R_amc)))
+    return numer / denom
