@@ -93,9 +93,9 @@ def get_flux(mass, g_agg, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752, 
     cond1 = (Rate_File[:, 2] == CM)
     cond2 = (Rate_File[:, 3] == tau)
     
-    eff_rate = Rate_File[np.any(np.column_stack((cond1, cond2)), axis=1), 4] # number / day
+    eff_rate = Rate_File[np.all(np.column_stack((cond1, cond2)), axis=1), 4] # number / day
     eff_rate *= dm_OverD
-    
+    print("Effective Event Rate: {:.2e} \n".format(eff_rate))
             
     
     properties_list = []
@@ -108,12 +108,14 @@ def get_flux(mass, g_agg, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752, 
             cnt += 1
             
     # tot_NSs = cnt
-    tot_NSs = 10000
+    # tot_NSs = 10000
     properties_list = np.asarray(properties_list)
     
     fileList = glob.glob(dirN+"/*")
     flux_density_list = []
-    total_time_length = tot_NSs / eff_rate # days to simulate
+    # total_time_length = tot_NSs / eff_rate # days to simulate
+    total_time_length = 90.0
+    tot_NSs = nt(eff_rate * total_time_length)
     
     observations = 5
     for j in range(observations):
@@ -135,7 +137,6 @@ def get_flux(mass, g_agg, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752, 
             
             transit_time = AMC_CrossingTime(b_param * 3.086e+13, MC_Mass, velNS, MC_R) # seconds
             time_sample = random.random() * total_time_length # peak encounter, days
-            
             
             file_use, den = eval_density_3d(fileList[i], b_param * 3.086e+13, (time_sample - central_obs_window) / 1.15741e-5 , v_Theta, is_axionstar=False, is_nfw=False)
             if np.sum(den) > 0:
