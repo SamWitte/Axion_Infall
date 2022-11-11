@@ -114,10 +114,10 @@ def get_flux(mass, g_agg, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752, 
     fileList = glob.glob(dirN+"/*")
     flux_density_list = []
     # total_time_length = tot_NSs / eff_rate # days to simulate
-    total_time_length = 90.0
+    total_time_length = 45.0
     tot_NSs = int(eff_rate * total_time_length)
     
-    observations = 5
+    observations = 4
     for j in range(observations):
         central_obs_window = random.random() * (total_time_length - 2.0 / 24.0) + 1.0 / 24.0 # days
     
