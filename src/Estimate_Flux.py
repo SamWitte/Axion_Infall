@@ -95,7 +95,7 @@ def get_flux(mass, g_agg, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752, 
     
     eff_rate = Rate_File[np.all(np.column_stack((cond1, cond2)), axis=1), 4] # number / day
     eff_rate *= dm_OverD
-    print("Effective Event Rate: {:.2e} \n".format(eff_rate))
+    print("Effective Event Rate: {:.2e} \n".format(eff_rate[0]))
             
     
     properties_list = []
@@ -115,7 +115,7 @@ def get_flux(mass, g_agg, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752, 
     flux_density_list = []
     # total_time_length = tot_NSs / eff_rate # days to simulate
     total_time_length = 90.0
-    tot_NSs = nt(eff_rate * total_time_length)
+    tot_NSs = int(eff_rate * total_time_length)
     
     observations = 5
     for j in range(observations):
@@ -164,6 +164,6 @@ def get_flux(mass, g_agg, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752, 
     print(flux_density_list)
     flux_density_list = np.asarray(flux_density_list)
     print("Maximum flux observed: {:.2e} mJy [computed with g_agg = {:.1e} 1/GeV]".format(np.max(flux_density_list), g_agg))
-    print("Limit around 10 mJy...")
+    print("Limit around 10 mJy... \t", np.sqrt(10 / np.max(flux_density_list)) * g_agg )
 
 get_flux(mass, g_agg, CM=maxCM, deltV=deltV, tau=tau, dm_OverD=dm_OverD)
