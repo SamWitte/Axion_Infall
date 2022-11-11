@@ -60,7 +60,10 @@ def AMC_DensityEval(b, M, v_NS, t, rho_amc, is_axionstar=False):
 def Transient_Time(b, r_amc, v_NS):
     # assume b [km], v_NS [vector unitless], rmac km
     bnorm = np.sqrt(np.sum(b**2))
-    delD = np.sqrt(r_amc**2 - bnorm**2)  # b in km
+    if r_amc > bnorm:
+        delD = np.sqrt(r_amc**2 - bnorm**2)  # b in km
+    else:
+        delD = 0.0
     return 2 * delD / v_NS / 2.998e5 # s
 
 def Transient_AMC_DensityEval(b, r_amc, rho_amc, v_NS, t, nfw=True):
@@ -219,6 +222,7 @@ def vel_disp_rescale(Mmc, R_amc, r_samples, v_inf_samples, is_nfw=True, c=100):
     v0_loc = np.sqrt(2 * Gnew * Mmc * MSamp / r_samples) # km/s
     # print(v0_rmax, np.mean(v0_loc), np.median(v0_loc), np.mean(v_inf_samples), np.median(v_inf_samples))
     # print(v0_loc[:-1])
+    
     reweight = np.exp(-(v_inf_samples /v0_loc) **2) / np.exp(-(v_inf_samples /v0_rmax) **2)
     reweight[v_inf_samples > v0_rmax] = 0.0
     return reweight
