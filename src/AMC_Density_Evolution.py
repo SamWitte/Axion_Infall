@@ -137,11 +137,11 @@ def get_t0_point(fileN, b, NS_vel_T_true):
     
     init_pos_norm = np.sqrt(np.sum(init_pos**2))
     rel_proj_dist = np.sum(fileData[:,18:18+3] * init_pos / init_pos_norm, axis=1) - init_pos_norm
-    print(np.max(rel_proj_dist), np.min(rel_proj_dist), np.median(rel_proj_dist), np.std(rel_proj_dist))
+    # print(np.max(rel_proj_dist), np.min(rel_proj_dist), np.median(rel_proj_dist), np.std(rel_proj_dist))
     
     
     rel_dist = np.sqrt(np.sum((init_pos - fileData[:,18:18+3])**2, axis=1))
-    print(np.max(rel_dist), np.min(rel_dist), np.median(rel_dist))
+    # print(np.max(rel_dist), np.min(rel_dist), np.median(rel_dist))
     return init_pos, rel_dist, NS_vel, Mmc, R_amc, fileData
 
 def eval_density_3d(fileN, b, t, NS_Vel_T, is_axionstar=False, is_nfw=True, return_rel_dist=False, c=100, NS_mag=None):
@@ -199,7 +199,7 @@ def eval_density_3d_timeList(fileN, b, t_list, NS_Vel_T, is_axionstar=False, is_
     rho_amc = (3*Mmc / (4*np.pi * (R_amc / 3.086e13)**3))  #
     
     tt = Transient_Time(b, R_amc, NS_mag / 2.998e5)
-    print("estimated transient time [s]: \t",tt)
+    # print("estimated transient time [s]: \t",tt)
     
     den = np.empty(len(t_list), dtype=object)
     for i,t in enumerate(t_list):
@@ -217,8 +217,8 @@ def vel_disp_rescale(Mmc, R_amc, r_samples, v_inf_samples, is_nfw=True, c=100):
     
     MSamp = NFW_fracM_inR(c, R_amc, r_samples)
     v0_loc = np.sqrt(2 * Gnew * Mmc * MSamp / r_samples) # km/s
-    print(v0_rmax, np.mean(v0_loc), np.median(v0_loc), np.mean(v_inf_samples), np.median(v_inf_samples))
-    print(v0_loc[:-1])
+    # print(v0_rmax, np.mean(v0_loc), np.median(v0_loc), np.mean(v_inf_samples), np.median(v_inf_samples))
+    # print(v0_loc[:-1])
     reweight = np.exp(-(v_inf_samples /v0_loc) **2) / np.exp(-(v_inf_samples /v0_rmax) **2)
     reweight[v_inf_samples > v0_rmax] = 0.0
     return reweight
