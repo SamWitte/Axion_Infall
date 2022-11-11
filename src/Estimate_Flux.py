@@ -129,13 +129,14 @@ def get_flux(mass, g_agg, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752, 
             
             indx_g = int(random.random() * len(properties_list[:,0]))
             
-            b_param = properties_list[indx_g, 10]
+            # b_param = properties_list[indx_g, 10]
+            b_param = np.sqrt(MC_R * random.random())
             # MC_Mass = properties_list[i, 9]
             # MC_R = properties_list[i, 8]
             MC_Den = properties_list[indx_g, 7] * 37.96
             # velNS = properties_list[i, 11]
             
-            transit_time = AMC_CrossingTime(b_param * 3.086e+13, MC_Mass, velNS, MC_R) # seconds
+            # transit_time = AMC_CrossingTime(b_param * 3.086e+13, MC_Mass, velNS, MC_R) # seconds
             time_sample = random.random() * total_time_length # peak encounter, days
             
             file_use, den = eval_density_3d(fileList[i], b_param * 3.086e+13, (time_sample - central_obs_window) / 1.15741e-5 , v_Theta, is_axionstar=False, is_nfw=False)
