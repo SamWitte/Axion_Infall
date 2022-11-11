@@ -88,12 +88,12 @@ def get_flux(mass, g_agg, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752, 
     
 
     dirN = "results"
-    BradK_File = np.loadtxt("../../M31_encounter_data/M31_encounter_data_Oct2022/Interaction_params_PL_M_AMC_1.00e-14_M31_maxCM_{:.0f}_tauO_{:.1f}_delta_{:d}.txt".format(CM, tau, deltV))
+    BradK_File = np.loadtxt("../../M31_encounter_data/M31_encounter_data_Oct2022/Interaction_params_PL_M_AMC_1.00e-14_M31_maxCM_{:.1f}_tauO_{:.1f}_delta_{:d}.txt".format(CM, tau, deltV))
     Rate_File = np.loadtxt("../../M31_encounter_data/M31_encounter_data_Oct2022/EncounterRates_M31.txt")
-    cond1 = (Rate_File[i, 2] == CM)
-    cond2 = (Rate_File[i, 3] == tau)
+    cond1 = (Rate_File[:, 2] == CM)
+    cond2 = (Rate_File[:, 3] == tau)
     
-    eff_rate = Rate_File[np.any(np.column_stack((condition1, condition2)), axis=1), 4] # number / day
+    eff_rate = Rate_File[np.any(np.column_stack((cond1, cond2)), axis=1), 4] # number / day
     eff_rate *= dm_OverD
     
             
@@ -136,12 +136,13 @@ def get_flux(mass, g_agg, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752, 
             transit_time = AMC_CrossingTime(b_param * 3.086e+13, MC_Mass, velNS, MC_R) # seconds
             time_sample = random.random() * total_time_length # peak encounter, days
             
-            if (((time_sample - transit_time / 2 * 1.15741e-5) < (central_obs_window - 1))and((time_sample + transit_time / 2 * 1.15741e-5) > (central_obs_window + 1))):
-                file_use, den = eval_density_3d(fileList[i], b_param * 3.086e+13, (time_sample - central_obs_window) / 1.15741e-5 , v_Theta, is_axionstar=False, is_nfw=False)
-                
+            
+            file_use, den = eval_density_3d(fileList[i], b_param * 3.086e+13, (time_sample - central_obs_window) / 1.15741e-5 , v_Theta, is_axionstar=False, is_nfw=False)
+            if np.sum(den) > 0:
                 num_in_window += 1
             else:
                 continue
+            
             
             file_use[:, 5] *= den
             prob = file_use[:,16]
@@ -164,4 +165,4 @@ def get_flux(mass, g_agg, binTot=200, eps_theta=0.03, bandwidth=90e3, dist=752, 
     print("Maximum flux observed: {:.2e} mJy [computed with g_agg = {:.1e} 1/GeV]".format(np.max(flux_density_list), g_agg))
     print("Limit around 10 mJy...")
 
-get_flux(mass, g_agg, cm=maxCM, deltV=deltV, tau=tau, dm_OverD=dm_OverD)
+get_flux(mass, g_agg, CM=maxCM, deltV=deltV, tau=tau, dm_OverD=dm_OverD)
