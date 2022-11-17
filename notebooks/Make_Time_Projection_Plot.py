@@ -44,7 +44,7 @@ is_axionstar=False
 plot_smoothed=True
 tag = ""
 phi_PT = 0.0
-yERR = np.array([0.056, 0.062, 0.154])
+yERR = np.array([0.040, 0.053, 0.24])
 time_MIN = -np.pi
 time_MAX = np.pi
 # time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_rot=omega_rot, mass=mass, NS_vel_T=NS_vel_T, is_axionstar=False, tag="", sve=False, remove_dephase=True, yERR=0.2)
@@ -192,7 +192,8 @@ def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_
     # timeEvo = np.empty(len(thetaL), len(thetaL), dtype=object)
 
     fig, ax = plt.subplots(figsize=(10,6))
-    colorL = ["#6B0504", "#94849B","#73AB84", "#79C7C5",  "#FFCAAF"]
+    # colorL = ["#6B0504", "#94849B","#73AB84", "#79C7C5",  "#FFCAAF"]
+    colorL = ["#003f5c", "#58508d","#bc5090", "#ff6361",  "#ffa600"]
     dist = 1 # 1 kpc, assumed
     bwidth = 1e-5 * mass / (6.58e-16) # fractional bandwidth
     
@@ -270,7 +271,7 @@ def time_evol_map_comp(fileList, thetaL, tList, eps_th, eps_phi, b_param, omega_
                     plt.plot(phi_big, rateVs, c=colorL[j], label=r"$\theta =${:.2f}".format(thetaC))
     plt.yscale("log")
     plt.xlim([time_MIN, time_MAX])
-    plt.xlabel(r'$\omega \times t$', fontsize=20);
+    plt.xlabel(r'$\Omega \times t$', fontsize=20);
     plt.ylabel('Flux [mJy]', fontsize=20);
     # plt.xticks([0, 1, 2, 3, 4, 5, 6], ('0', '', '2', '', '4', '', '6'))
     ax.tick_params(direction='in', length=8, width=1, labelsize=18)#, colors='r',grid_color='r', grid_alpha=0.5)
